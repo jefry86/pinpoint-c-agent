@@ -65,6 +65,8 @@ extern bool get_proxy_http_header(std::string &,int&);
 
 extern void init_evn_before_agent_real_startup(Pinpoint::Configuration::Config&);
 
+extern std::string get_host_name_flag();
+
 extern std::string get_host_process_info(eName name);
 
 const char PHP_REQUEST_FUNC_NAME[] = "_request";

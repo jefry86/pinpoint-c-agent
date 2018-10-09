@@ -260,6 +260,10 @@ PHP_RINIT_FUNCTION(pinpoint)
         RunOriginExecute::stop();
     }
 
+    Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
+    contextPtr->agentId = contextPtr->applicationName + ":" + get_host_name_flag();
+    contextPtr->applicationName = contextPtr->applicationName + ":" + get_host_name_flag();
+
     if (agentPtr->getAgentStatus() == Pinpoint::Agent::AGENT_PRE_INITED)
     {
         // Most of PHP configurations are not thread-safety.

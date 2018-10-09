@@ -288,6 +288,28 @@ int32_t get_http_response_status()
     }
 }
 
+string get_host_name_flag()
+{
+    TSRMLS_FETCH();
+    char* pName = "SERVER_NAME";
+    char *pTempValueStr = sapi_getenv(pName, strlen(pName) TSRMLS_CC);
+    string::size_type nPos = 0;
+
+    if (pTempValueStr)
+    {
+        std::string value(pTempValueStr);
+        efree(pTempValueStr);
+        while(nPos = value.find(".", nPos))
+        {
+            if (nPos = string::npos) break;
+            value.replace(nPos, 1, "_");
+            nPos ++;
+        }
+        return value;
+    }
+    return "none";
+}
+
 string get_host_process_info(eName name)
 {
     TSRMLS_FETCH();
