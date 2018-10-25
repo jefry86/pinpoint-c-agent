@@ -310,6 +310,23 @@ string get_host_name_flag()
     return "none";
 }
 
+string get_host_name_flag_id(std::string& id)
+{
+    std::string flag = get_host_name_flag();
+
+    if (id.length() <= flag.length()) {
+        return id + ":" + flag;
+    }
+
+    string::size_type nPos = id.find_last_of(":");
+
+    if (id.substr(nPos + 1) == flag) {
+        return id;
+    }
+
+    return id + ":" + flag;
+}
+
 string get_host_process_info(eName name)
 {
     TSRMLS_FETCH();
