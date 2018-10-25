@@ -261,8 +261,8 @@ PHP_RINIT_FUNCTION(pinpoint)
     }
 
     Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
-    contextPtr->agentId = contextPtr->applicationName + ":" + get_host_name_flag();
-    contextPtr->applicationName = contextPtr->applicationName + ":" + get_host_name_flag();
+    contextPtr->agentId = contextPtr->applicationName + "_" + get_host_name_flag();
+    contextPtr->applicationName = contextPtr->applicationName + "_" + get_host_name_flag();
 
     if (agentPtr->getAgentStatus() == Pinpoint::Agent::AGENT_PRE_INITED)
     {
