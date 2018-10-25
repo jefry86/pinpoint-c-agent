@@ -301,7 +301,7 @@ string get_host_name_flag()
         efree(pTempValueStr);
         while(nPos = value.find(".", nPos))
         {
-            if (nPos = string::npos) break;
+            if (nPos == string::npos) break;
             value.replace(nPos, 1, "_");
             nPos ++;
         }
