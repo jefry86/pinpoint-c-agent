@@ -314,17 +314,17 @@ string get_host_name_flag_id(std::string& id)
 {
     std::string flag = get_host_name_flag();
 
-    if (id.length() <= flag.length()) {
+    string::size_type nPos = id.find_last_of(":");
+
+    if (nPos == string::npos) {
         return id + ":" + flag;
     }
-
-    string::size_type nPos = id.find_last_of(":");
 
     if (id.substr(nPos + 1) == flag) {
         return id;
     }
 
-    return id + ":" + flag;
+    return id.substr(0, nPos) + ":" + flag;
 }
 
 string get_host_process_info(eName name)
