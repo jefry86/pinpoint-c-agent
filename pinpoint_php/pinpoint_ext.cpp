@@ -270,6 +270,28 @@ PHP_RINIT_FUNCTION(pinpoint)
         // So we read plugins that are wrote by php synchronized.
         load_php_interface_plugins();
         start_pinpoint_agent_async();
+        check_new_host_name_flag();
+    } else if (check_new_host_name_flag()) {
+        if(agent_start_thread_ptr)
+        {
+            agent_start_thread_ptr->join();
+        }
+        if (agentPtr != NULL)
+        {
+            agentPtr->stop();
+        }
+        if (is_aop_turn_on)
+        {
+            turn_off_aop();
+        }
+
+        init_aop();
+        turn_on_aop();
+
+        load_php_interface_plugins();
+        start_pinpoint_agent_async();
+
+        is_aop_turn_on = false;
     }
 
     if (is_aop_turn_on && agentPtr->getAgentStatus() == Pinpoint::Agent::AGENT_STARTED)

@@ -17,6 +17,7 @@
 #include "pinpoint_type.h"
 #include <cstdio>
 #include <iostream>
+#include <set>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <algorithm>    // std::for_each
@@ -36,8 +37,6 @@
 #include "SAPI.h"
 ///**********************************************************/
 
-
-
 using Pinpoint::Plugin::RequestHeader;
 using Pinpoint::Plugin::HttpHeader;
 using Pinpoint::Plugin::HeaderMap;
@@ -45,10 +44,11 @@ using Pinpoint::Plugin::HeaderMap;
 #define DEFAULT_LOGPATH "/tmp"
 #define DEFAULT_LOGLEVER "DEBUG"
 
-
 using std::string ;
+
 static std::map<string, string> _moduleInfo;
 
+static std::set<std::string> _hostNameFlag;
 
 int RunOriginExecute::iRunning = 0 ;
 int RunOriginExecute::iTimes = 0;
@@ -325,6 +325,17 @@ string get_host_name_flag_id(std::string& id)
     }
 
     return id.substr(0, nPos) + ":" + flag;
+}
+
+bool check_new_host_name_flag()
+{
+    std::string flag = get_host_name_flag();
+
+    if (! _hostNameFlag.count(flag)) {
+        _hostNameFlag.insert(flag);
+        return true;
+    }
+    return false;
 }
 
 string get_host_process_info(eName name)
