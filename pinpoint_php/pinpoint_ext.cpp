@@ -285,6 +285,16 @@ PHP_RINIT_FUNCTION(pinpoint)
             turn_off_aop();
         }
 
+        Pinpoint::Configuration::ConfFileObject fileobj(PINPOINT_G(configFileName));
+        Pinpoint::Configuration::Config config(fileobj);
+        AgentFunction agentFunction;
+        agentFunction.logOutputFunc = NULL;
+        agentFunction.addInterceptorFunc = add_interceptor;
+        agentFunction.getHostProcessInfo = get_host_process_info;
+        agentPtr->preInit(Pinpoint::Agent::PHP_AGENT_TYPE,
+                          agentFunction,
+                          config);
+
         init_aop();
         turn_on_aop();
 
