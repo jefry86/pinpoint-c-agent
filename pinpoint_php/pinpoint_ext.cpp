@@ -260,14 +260,11 @@ PHP_RINIT_FUNCTION(pinpoint)
         RunOriginExecute::stop();
     }
 
-    Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
-    //contextPtr->agentId = get_host_name_flag_id(contextPtr->agentId);
-    contextPtr->applicationName = get_host_name_flag_id(contextPtr->applicationName);
-
     if (agentPtr->getAgentStatus() == Pinpoint::Agent::AGENT_PRE_INITED)
     {
-        // Most of PHP configurations are not thread-safety.
-        // So we read plugins that are wrote by php synchronized.
+        Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
+        contextPtr->applicationName = get_host_name_flag_id(contextPtr->applicationName);
+
         load_php_interface_plugins();
         start_pinpoint_agent_async();
         check_new_host_name_flag();
@@ -297,6 +294,9 @@ PHP_RINIT_FUNCTION(pinpoint)
 
         init_aop();
         turn_on_aop();
+
+        Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
+        contextPtr->applicationName = get_host_name_flag_id(contextPtr->applicationName);
 
         load_php_interface_plugins();
         start_pinpoint_agent_async();
