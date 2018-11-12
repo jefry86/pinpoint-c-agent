@@ -299,14 +299,14 @@ namespace Pinpoint
 
         protected:
             static const uint32_t TCP_RESPONSE_HEADER_LEN = 2;
-            static const uint32_t READ_BUFFER_LEN = 1024 * 64;
-            static const uint32_t WRITE_BUFFER_LEN = 1024 * 64;
-            static const uint32_t SEND_QUEUE_LEN = 1024 * 10;
+            static const uint32_t READ_BUFFER_LEN = 1024 * 512;
+            static const uint32_t WRITE_BUFFER_LEN = 1024 * 512;
+            static const uint32_t SEND_QUEUE_LEN = 1024 * 128;
 
 #ifdef RUN_TEST
-            static const uint32_t WAIT_RESPONSE_QUEUE_LEN = 2;
+            static const uint32_t WAIT_RESPONSE_QUEUE_LEN = 2000;
 #else
-            static const uint32_t WAIT_RESPONSE_QUEUE_LEN = 200;
+            static const uint32_t WAIT_RESPONSE_QUEUE_LEN = 2000;
 #endif
             // not thread safe
             int32_t sendPacket_(boost::shared_ptr<Packet> &packetPtr, int32_t timeout);
