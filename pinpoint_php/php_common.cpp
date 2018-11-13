@@ -305,7 +305,7 @@ string get_host_name_flag()
             value.replace(nPos, 1, "_");
             nPos ++;
         }
-        return value;
+        return value.substr(0, 15);
     }
     return "none";
 }
