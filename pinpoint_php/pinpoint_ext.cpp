@@ -302,6 +302,9 @@ PHP_RINIT_FUNCTION(pinpoint)
         start_pinpoint_agent_async();
 
         is_aop_turn_on = false;
+    } else {
+        Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
+        contextPtr->applicationName = get_host_name_flag_id(contextPtr->applicationName);
     }
 
     if (is_aop_turn_on && agentPtr->getAgentStatus() == Pinpoint::Agent::AGENT_STARTED)

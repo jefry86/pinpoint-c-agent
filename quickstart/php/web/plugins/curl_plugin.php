@@ -34,10 +34,17 @@ class curl_exec_interceptor extends \Pinpoint\Interceptor
             $spanid = -1;
             if($trace->getNextSpanInfo($attachedHeader,$spanid))
             {
-                $opt_header = array_merge($attachedHeader,$_SERVER[(string)$args[0]][CURLOPT_HTTPHEADER]);
-                array_push($opt_header,'Pinpoint-Host:'.$_SERVER[(string)$args[0]][CURLOPT_URL]);
-                curl_setopt($args[0], CURLOPT_HTTPHEADER,$opt_header);
-
+                if (!empty($attachedHeader) and !empty($_SERVER[(string)$args[0]][CURLOPT_HTTPHEADER]))
+                {
+                    $opt_header = array_merge($attachedHeader,$_SERVER[(string)$args[0]][CURLOPT_HTTPHEADER]);
+                    if (!empty($_SERVER[(string)$args[0]][CURLOPT_URL]))
+                    {
+                        array_push($opt_header,'Pinpoint-Host:'.$_SERVER[(string)$args[0]][CURLOPT_URL]);
+                        curl_setopt($args[0], CURLOPT_HTTPHEADER,$opt_header);
+                    }
+                } else {
+                    pinpoint_log(PINPOINT_ERROR, "MH:args:" . json_encode($args) . "---SERVER:" . json_encode($_SERVER));
+                }
                 $event->setNextSpanId($spanid);
             }
             $event->addAnnotation(PINPOINT_ANNOTATION_ARGS,json_encode(curl_getinfo($args[0],CURLINFO_EFFECTIVE_URL)));
