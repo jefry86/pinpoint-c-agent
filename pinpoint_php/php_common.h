@@ -71,6 +71,10 @@ extern std::string get_host_name_flag();
 
 extern std::string get_host_name_flag_id(std::string &);
 
+extern bool init_host_app_map(std::string &);
+
+extern string get_host_app_name();
+
 extern bool check_new_host_name_flag();
 
 extern std::string get_host_process_info(eName name);

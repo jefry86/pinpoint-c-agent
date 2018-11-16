@@ -48,6 +48,7 @@ using std::string ;
 
 static std::map<string, string> _moduleInfo;
 
+static std::map<string,string> _hostAppMap;
 static std::set<std::string> _hostNameFlag;
 
 int RunOriginExecute::iRunning = 0 ;
@@ -293,7 +294,7 @@ string get_host_name_flag()
     TSRMLS_FETCH();
     char* pName = "SERVER_NAME";
     char *pTempValueStr = sapi_getenv(pName, strlen(pName) TSRMLS_CC);
-    string::size_type nPos = 0;
+    string::size_type nPos;
 
     if (pTempValueStr)
     {
@@ -305,26 +306,88 @@ string get_host_name_flag()
             value.replace(nPos, 1, "_");
             nPos ++;
         }
-        return value.substr(0, 15);
+        return value;
     }
     return "none";
 }
 
 string get_host_name_flag_id(std::string& id)
 {
+    if (! _hostAppMap.empty())
+    {
+        std::string app_name = get_host_app_name();
+        if (app_name != "")
+        {
+            return app_name.substr(0, 24);
+        }
+    }
+
     std::string flag = get_host_name_flag();
 
     string::size_type nPos = id.find_last_of(":");
 
     if (nPos == string::npos) {
-        return id + ":" + flag;
+        return id.substr(0, 8) + ":" + flag.substr(0, 15);
     }
 
-    if (id.substr(nPos + 1) == flag) {
+    if (id.substr(nPos + 1) == flag.substr(0, 15)) {
         return id;
     }
 
-    return id.substr(0, nPos) + ":" + flag;
+    return id.substr(0, nPos) + ":" + flag.substr(0, 15);
+}
+
+bool init_host_app_map(std::string& org)
+{
+    string::size_type nPos, rPos;
+
+    std::string record;
+
+    while (nPos = org.find(";", nPos))
+    {
+        if (nPos == string::npos) {
+            record = org;
+        } else {
+            record = org.substr(0, nPos);
+        }
+
+        if (record.empty()) {
+            continue;
+        }
+
+        rPos = record.find("|", rPos);
+
+        if (rPos == string::npos) {
+            continue;
+        }
+
+        _hostAppMap[record.substr(0, rPos)] = record.substr(rPos + 1);
+
+        nPos ++;
+    }
+
+    return ! _hostAppMap.empty();
+}
+
+string get_host_app_name()
+{
+    std::map<std::string,std::string>::iterator it;
+
+    if (_hostAppMap.empty())
+    {
+        return "";
+    }
+
+    std::string flag = get_host_name_flag();
+
+    it = _hostAppMap.find(flag);
+
+    if (it != _hostAppMap.end())
+    {
+        return it->second;
+    }
+
+    return "";
 }
 
 bool check_new_host_name_flag()

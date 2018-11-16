@@ -1,6 +1,6 @@
 [common]
 AgentID=php_pinpoint
-ApplicationName=PHPApplication
+ApplicationName=ppp.abc.def.ghi.jkl.test.xin.com|ppp;
 
 ## collector ip address
 CollectorSpanIp=x.x.x.x
