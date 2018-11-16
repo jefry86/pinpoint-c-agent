@@ -210,7 +210,6 @@ namespace Pinpoint
             contextPtr->agentConfigArgsPtr = args;
             contextPtr->agentId = args->agentId;
             contextPtr->applicationName = args->applicationName;
-            contextPtr->orgApplicationName = args->applicationName;
             contextPtr->startTimestamp = utils::get_current_microsec_stamp64();
             contextPtr->serviceType = detectServiceType(agentType);
 

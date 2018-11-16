@@ -74,7 +74,6 @@ namespace Pinpoint
             std::string ports;
             std::string agentId;
             std::string applicationName;
-            std::string orgApplicationName;
             int16_t serviceType;
             uint32_t mainProcessPid;
             std::string agentVersion;
