@@ -347,6 +347,7 @@ bool init_host_app_map(std::string& org)
     {
         if (nPos == string::npos) {
             record = org;
+            break;
         } else {
             record = org.substr(0, nPos);
         }
