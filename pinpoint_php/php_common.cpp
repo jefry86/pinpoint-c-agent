@@ -337,28 +337,37 @@ string get_host_name_flag_id(std::string& id)
     return id.substr(0, nPos) + ":" + flag.substr(0, 15);
 }
 
-bool init_host_app_map(std::string& org)
+bool init_host_app_map(std::string org)
 {
-    string::size_type nPos, rPos;
+    string::size_type nPos = 0;
+    string::size_type rPos = 0;
 
     std::string record;
+    bool end = false;
 
     while (nPos = org.find(";", nPos))
     {
+        if (end) {
+            break;
+        }
+
         if (nPos == string::npos) {
             record = org;
-            break;
+            end = true;
         } else {
             record = org.substr(0, nPos);
+            org = org.substr(nPos + 1);
         }
 
         if (record.empty()) {
+            nPos ++;
             continue;
         }
 
         rPos = record.find("|", rPos);
 
         if (rPos == string::npos) {
+            nPos ++;
             continue;
         }
 
