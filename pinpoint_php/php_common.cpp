@@ -341,8 +341,12 @@ bool init_host_app_map(std::string org)
 {
     string::size_type nPos = 0;
     string::size_type rPos = 0;
+    string::size_type uPos = 0;
 
     std::string record;
+    std::string key;
+    std::string val;
+
     bool end = false;
 
     while (nPos = org.find(";", nPos))
@@ -364,6 +368,7 @@ bool init_host_app_map(std::string org)
             continue;
         }
 
+        rPos = 0;
         rPos = record.find("|", rPos);
 
         if (rPos == string::npos) {
@@ -371,7 +376,18 @@ bool init_host_app_map(std::string org)
             continue;
         }
 
-        _hostAppMap[record.substr(0, rPos)] = record.substr(rPos + 1);
+        key = record.substr(0, rPos);
+        val = record.substr(rPos + 1);
+        uPos = 0;
+
+        while(uPos = key.find(".", uPos))
+        {
+            if (uPos == string::npos) break;
+            key.replace(uPos, 1, "_");
+            uPos ++;
+        }
+
+        _hostAppMap[key] = val;
 
         nPos ++;
     }
