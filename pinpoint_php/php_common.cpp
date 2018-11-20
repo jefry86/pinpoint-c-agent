@@ -294,7 +294,7 @@ string get_host_name_flag()
     TSRMLS_FETCH();
     char* pName = "SERVER_NAME";
     char *pTempValueStr = sapi_getenv(pName, strlen(pName) TSRMLS_CC);
-    string::size_type nPos;
+    string::size_type nPos = 0;
 
     if (pTempValueStr)
     {
