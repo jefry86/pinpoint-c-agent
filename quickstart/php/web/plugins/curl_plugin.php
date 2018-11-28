@@ -20,59 +20,51 @@ class curl_exec_interceptor extends \Pinpoint\Interceptor
     var $apiId = -1;
     public function __construct()
     {
-        $this->apiId = pinpoint_add_api("curl_exec", -1);
+        $this->apiId = pinpoint_add_api('curl_exec', -1);
     }
 
     public function onBefore($callId, $args)
     {
-        $trace = pinpoint_get_current_trace();
-        if ($trace)
-        {
-            // event is Pinpoint\\SpanEventRecorder
-            $event = $trace->traceBlockBegin($callId);
-            $attachedHeader = array();
-            $spanid = -1;
-            if($trace->getNextSpanInfo($attachedHeader,$spanid))
-            {
-                if (!empty($attachedHeader) and !empty($_SERVER[(string)$args[0]][CURLOPT_HTTPHEADER]))
-                {
-                    $opt_header = array_merge($attachedHeader,$_SERVER[(string)$args[0]][CURLOPT_HTTPHEADER]);
-                    if (!empty($_SERVER[(string)$args[0]][CURLOPT_URL]))
-                    {
-                        array_push($opt_header,'Pinpoint-Host:'.$_SERVER[(string)$args[0]][CURLOPT_URL]);
-                        curl_setopt($args[0], CURLOPT_HTTPHEADER,$opt_header);
-                    }
-                } else {
-                    pinpoint_log(PINPOINT_ERROR, "MH:args:" . json_encode($args) . "---SERVER:" . json_encode($_SERVER));
-                }
-                $event->setNextSpanId($spanid);
-            }
-            $event->addAnnotation(PINPOINT_ANNOTATION_ARGS,json_encode(curl_getinfo($args[0],CURLINFO_EFFECTIVE_URL)));
-            $event->markBeforeTime();
-            $event->setApiId($this->apiId);
-            $event->setServiceType(PINPOINT_PHP_REMOTE);
-            $event->setDestinationId($_SERVER[(string)$args[0]][CURLOPT_URL]);
-        }
-        else
-        {
-            // set pinpoint sampling ignore
-            $opt_header = $_SERVER[(string)$args[0]][CURLOPT_HTTPHEADER];
-            array_push($opt_header,PINPOINT_SAMPLE_HTTP_HEADER.":".PINPOINT_SAMPLE_FALSE);
-            curl_setopt($args[0], CURLOPT_HTTPHEADER, $opt_header);
+        if (empty($args[0])) return;
+        if (empty($_SERVER[(string)$args[0]])) return;
 
+        $params = $_SERVER[(string)$args[0]];
+
+        if (empty($params[CURLOPT_HTTPHEADER])) return;
+
+        $trace = pinpoint_get_current_trace();
+        if (empty($trace)) {
+            array_push($params[CURLOPT_HTTPHEADER], PINPOINT_SAMPLE_HTTP_HEADER . ':' . PINPOINT_SAMPLE_FALSE);
+            curl_setopt($args[0], CURLOPT_HTTPHEADER, $params[CURLOPT_HTTPHEADER]);
         }
+
+        $event = $trace->traceBlockBegin($callId);
+        $attachedHeader = array();
+        $spanid = -1;
+        if($trace->getNextSpanInfo($attachedHeader, $spanid)) {
+            $opt_header = array_merge($attachedHeader, $params[CURLOPT_HTTPHEADER]);
+            if (!empty($params[CURLOPT_URL])) {
+                array_push($opt_header, 'Pinpoint-Host:' . $params[CURLOPT_URL]);
+                curl_setopt($args[0], CURLOPT_HTTPHEADER, $opt_header);
+            }
+            $event->setNextSpanId($spanid);
+        }
+
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS,json_encode(curl_getinfo($args[0], CURLINFO_EFFECTIVE_URL)));
+        $event->markBeforeTime();
+        $event->setApiId($this->apiId);
+        $event->setServiceType(PINPOINT_PHP_REMOTE);
+        $event->setDestinationId($params[CURLOPT_URL]);
     }
 
     public function onEnd($callId, $data)
     {
         $trace = pinpoint_get_current_trace();
-        if ($trace)
-        {
-            $args = $data["args"];
-            $retArgs = $data["result"];
+        if ($trace) {
+            $args = $data['args'];
+            $retArgs = $data['result'];
             $event = $trace->getEvent($callId);
-            if ($event)
-            {
+            if ($event) {
                 $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars(print_r($retArgs,true), ENT_QUOTES));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
@@ -83,11 +75,9 @@ class curl_exec_interceptor extends \Pinpoint\Interceptor
     public function onException($callId, $exceptionStr)
     {
         $trace = pinpoint_get_current_trace();
-        if ($trace)
-        {
+        if ($trace) {
             $event = $trace->getEvent($callId);
-            if ($event)
-            {
+            if ($event) {
                 $event->markAfterTime();
                 $event->setExceptionInfo($exceptionStr);
             }
@@ -101,47 +91,42 @@ class curl_setopt_interceptor extends \Pinpoint\Interceptor
     var $apiId = -1;
     public function __construct()
     {
-        $this->apiId = pinpoint_add_api("curl_setopt", -1);
+        $this->apiId = pinpoint_add_api('curl_setopt', -1);
     }
 
     public function onBefore($callId, $args)
     {
-        if( $args[1] == CURLOPT_URL){
+        if ($args[1] == CURLOPT_URL) {
             $trace = pinpoint_get_current_trace();
-            if ($trace)
-            {
+            if ($trace) {
                 $event = $trace->traceBlockBegin($callId);
-                $event->addAnnotation(PINPOINT_ANNOTATION_ARGS,$args[2]);
+                $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, $args[2]);
                 $event->markBeforeTime();
                 $event->setApiId($this->apiId);
                 $event->setServiceType(PINPOINT_PHP_RPC_TYPE);
             }
             $url_array = parse_url($args[2]);
 
-            $_SERVER[(string)$args[0]][$args[1]] =  $url_array['host']. ":" .$url_array['port'];
-        }
-        else{
-
-            $_SERVER[(string)$args[0]][$args[1]] =  $args[2];
+            $_SERVER[(string)$args[0]][$args[1]] = $url_array['host'] . ':' . (empty($url_array['port']) ? 80 : $url_array['port']);
+        } else {
+            $_SERVER[(string)$args[0]][$args[1]] = $args[2];
         }
     }
 
     public function onEnd($callId, $data)
     {
-        $args = $data["args"];
-        $retArgs = $data["result"];
+        $args = $data['args'];
+        $retArgs = $data['result'];
 
-        if($args[1]!= CURLOPT_URL){
+        if ($args[1] != CURLOPT_URL) {
             return ;
         }
         $trace = pinpoint_get_current_trace();
 
-        if ($trace )
-        {
+        if ($trace) {
             $event = $trace->getEvent($callId);
-            if ($event)
-            {
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars(print_r($retArgs,true),ENT_QUOTES));
+            if ($event) {
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars(print_r($retArgs, true),ENT_QUOTES));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -151,11 +136,9 @@ class curl_setopt_interceptor extends \Pinpoint\Interceptor
     public function onException($callId, $exceptionStr)
     {
         $trace = pinpoint_get_current_trace();
-        if ($trace)
-        {
+        if ($trace) {
             $event = $trace->getEvent($callId);
-            if ($event)
-            {
+            if ($event) {
                 $event->markAfterTime();
                 $event->setExceptionInfo($exceptionStr);
             }
@@ -163,18 +146,14 @@ class curl_setopt_interceptor extends \Pinpoint\Interceptor
     }
 }
 
-
 class CurlPlugin extends \Pinpoint\Plugin
 {
-
     public function __construct()
     {
         parent::__construct();
         $i = new curl_exec_interceptor();
-        $this->addInterceptor($i, "curl_exec", basename(__FILE__));
-        $i =  new curl_setopt_interceptor();
-        $this->addInterceptor($i,"curl_setopt",basename(__FILE__));
+        $this->addInterceptor($i, 'curl_exec', basename(__FILE__));
+        $i = new curl_setopt_interceptor();
+        $this->addInterceptor($i, 'curl_setopt', basename(__FILE__));
     }
 };
-
-?>
