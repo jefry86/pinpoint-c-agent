@@ -17,20 +17,26 @@
 
 class __pinpoint_pdo_util
 {
+    const LIMIT = 0;
+
+    const SAMPLE = 0;
+
     static protected $__dsnMap = [];
 
     static protected $__statementMap = [];
 
+    static protected $__dsnConst = [];
+
     static public function setDsn($obj, $dsn)
     {
-    	self::$__dsnMap[(string) $obj]['dsn'] = $dsn;
+        self::$__dsnMap[(string) $obj]['dsn'] = $dsn;
     }
 
     static public function getDsn($obj)
     {
-    	if (isset(self::$__dsnMap[(string) $obj]['dsn'])) {
-    		return self::$__dsnMap[(string) $obj]['dsn'];
-    	}
+        if (isset(self::$__dsnMap[(string) $obj]['dsn'])) {
+            return self::$__dsnMap[(string) $obj]['dsn'];
+        }
     }
 
     static public function setStatement($obj, $pdo_obj, $sql)
@@ -41,15 +47,52 @@ class __pinpoint_pdo_util
 
     static public function setStatementParam($obj, $param)
     {
-    	self::$__statementMap[(string)$obj]['param'] = $param;
+        self::$__statementMap[(string)$obj]['param'] = $param;
     }
 
     static public function getStatement($obj)
     {
-    	if (isset(self::$__statementMap[(string)$obj])) {
-    		return self::$__statementMap[(string)$obj];
-    	}
-    	return null;
+        if (isset(self::$__statementMap[(string)$obj])) {
+            return self::$__statementMap[(string)$obj];
+        }
+        return null;
+    }
+
+    static public function judgeIgnore($dsn)
+    {
+        if (isset(self::$__dsnConst[$dsn])) {
+            self::$__dsnConst[$dsn] ++;
+        } else {
+            self::$__dsnConst[$dsn] = 1;
+        }
+
+        if (self::LIMIT > 0) {
+            return self::$__dsnConst[$dsn] >= self::LIMIT;
+        }
+
+        if (self::SAMPLE > 0) {
+            return (self::$__dsnConst[$dsn] - 1) % self::SAMPLE != 0;
+        }
+
+        return false;
+    }
+
+    static public function judgeIgnoreByPdo($obj)
+    {
+        $dsn = self::getDsn($obj);
+        if ($dsn) {
+            self::judgeIgnore($dsn);
+        }
+        return true;
+    }
+
+    static public function judgeIgnoreByPdoStatement($obj)
+    {
+        $statement = self::getStatement($obj);
+        if (empty($statement['pdo'])) {
+            return true;
+        }
+        return self::judgeIgnoreByPdo($statement['pdo']);
     }
 
     static public function getServiceType($dsn)
@@ -102,14 +145,14 @@ class __pinpoint_pdo_interceptor extends \Pinpoint\Interceptor
 
     public function onBefore($callId, $args)
     {
-    	$trace = pinpoint_get_current_trace();
-    	if (! $trace) {
-    		return;
-    	}
+        $trace = pinpoint_get_current_trace();
+        if (! $trace) {
+            return;
+        }
 
-    	if (empty($args[0])) {
-    		return;
-    	}
+        if (empty($args[0])) {
+            return;
+        }
 
         $event = $trace->traceBlockBegin($callId);
         $event->markBeforeTime();
@@ -119,13 +162,13 @@ class __pinpoint_pdo_interceptor extends \Pinpoint\Interceptor
 
         $tmp = [];
         if (isset($args[0])) {
-        	$tmp['dsn'] = $args[0];
+            $tmp['dsn'] = $args[0];
         }
         if (isset($args[1])) {
-        	$tmp['user'] = $args[1];
+            $tmp['user'] = $args[1];
         }
         if (isset($args[2])) {
-        	$tmp['pwd'] = $args[2];
+            $tmp['pwd'] = $args[2];
         }
 
         $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, json_encode($tmp));
@@ -133,12 +176,15 @@ class __pinpoint_pdo_interceptor extends \Pinpoint\Interceptor
 
     public function onEnd($callId, $data)
     {
+        if (empty($data['args'][0])) {
+            return ;
+        }
+
         $trace = pinpoint_get_current_trace();
         if ($trace) {
-            $retArgs = $data['result'];
             $event = $trace->getEvent($callId);
             if ($event) {
-            	__pinpoint_pdo_util::setDsn($this->getSelf(), $data['args'][0]);
+                __pinpoint_pdo_util::setDsn($this->getSelf(), $data['args'][0]);
                 $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, (array) $this->getSelf());
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
@@ -169,16 +215,20 @@ class __pinpoint_pdo_exec_interceptor extends \Pinpoint\Interceptor
 
     public function onBefore($callId, $args)
     {
-    	$trace = pinpoint_get_current_trace();
-    	if (! $trace) {
-    		return;
-    	}
+        $trace = pinpoint_get_current_trace();
+        if (! $trace) {
+            return;
+        }
 
-    	if (empty($args[0])) {
-    		return;
-    	}
+        if (empty($args[0])) {
+            return;
+        }
 
-    	$dsn = __pinpoint_pdo_util::getDsn($this->getSelf());
+        if (__pinpoint_pdo_util::judgeIgnoreByPdo($this->getSelf())) {
+            return;
+        }
+
+        $dsn = __pinpoint_pdo_util::getDsn($this->getSelf());
 
         $event = $trace->traceBlockBegin($callId);
         $event->markBeforeTime();
@@ -193,7 +243,6 @@ class __pinpoint_pdo_exec_interceptor extends \Pinpoint\Interceptor
     {
         $trace = pinpoint_get_current_trace();
         if ($trace) {
-            $retArgs = $data['result'];
             $event = $trace->getEvent($callId);
             if ($event) {
                 $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, json_encode($data['result']));
@@ -250,14 +299,18 @@ class __pinpoint_pdo_query_interceptor extends \Pinpoint\Interceptor
 
     public function onBefore($callId, $args)
     {
-    	$trace = pinpoint_get_current_trace();
-    	if (! $trace) {
-    		return;
-    	}
+        $trace = pinpoint_get_current_trace();
+        if (! $trace) {
+            return;
+        }
 
-    	if (empty($args[0])) {
-    		return;
-    	}
+        if (empty($args[0])) {
+            return;
+        }
+
+        if (__pinpoint_pdo_util::judgeIgnoreByPdo($this->getSelf())) {
+            return;
+        }
 
         $dsn = __pinpoint_pdo_util::getDsn($this->getSelf());
 
@@ -274,10 +327,9 @@ class __pinpoint_pdo_query_interceptor extends \Pinpoint\Interceptor
     {
         $trace = pinpoint_get_current_trace();
         if ($trace) {
-            $retArgs = $data['result'];
             $event = $trace->getEvent($callId);
             if ($event) {
-            	__pinpoint_pdo_util::setStatement($data['result'], $this->getSelf(), $data['args'][0]);
+                __pinpoint_pdo_util::setStatement($data['result'], $this->getSelf(), $data['args'][0]);
                 $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, json_encode($data['result']));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
@@ -313,9 +365,9 @@ class __pinpoint_pdo_statement_bind_param_interceptor extends \Pinpoint\Intercep
 
     public function onEnd($callId, $data)
     {
-    	if ($data['result']) {
-    		__pinpoint_pdo_util::setStatementParam($this->getSelf(), $data['args']);
-    	}
+        if ($data['result']) {
+            __pinpoint_pdo_util::setStatementParam($this->getSelf(), $data['args']);
+        }
     }
 
     public function onException($callId, $exceptionStr)
@@ -334,16 +386,20 @@ class __pinpoint_pdo_statement_execute_interceptor extends \Pinpoint\Interceptor
 
     public function onBefore($callId, $args)
     {
-    	$trace = pinpoint_get_current_trace();
-    	if (! $trace) {
-    		return;
-    	}
+        $trace = pinpoint_get_current_trace();
+        if (! $trace) {
+            return;
+        }
 
-    	$statement = __pinpoint_pdo_util::getStatement($this->getSelf());
+        if (__pinpoint_pdo_util::judgeIgnoreByPdoStatement($this->getSelf())) {
+            return;
+        }
 
-    	if (! $statement) {
-    		return;
-    	}
+        $statement = __pinpoint_pdo_util::getStatement($this->getSelf());
+
+        if (! $statement) {
+            return;
+        }
 
         $dsn = __pinpoint_pdo_util::getDsn($statement['pdo']);
 
@@ -360,7 +416,6 @@ class __pinpoint_pdo_statement_execute_interceptor extends \Pinpoint\Interceptor
     {
         $trace = pinpoint_get_current_trace();
         if ($trace) {
-            $retArgs = $data['result'];
             $event = $trace->getEvent($callId);
             if ($event) {
                 $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, json_encode($data['result']));
@@ -380,5 +435,25 @@ class __pinpoint_pdo_statement_execute_interceptor extends \Pinpoint\Interceptor
                 $event->setExceptionInfo($exceptionStr);
             }
         }
+    }
+}
+
+class __pinpoint_pdo_plugin extends \Pinpoint\Plugin
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $i = new __pinpoint_pdo_interceptor();
+        $this->addInterceptor($i, 'PDO::__construct', basename(__FILE__));
+        $i = new __pinpoint_pdo_exec_interceptor();
+        $this->addInterceptor($i, 'PDO::exec', basename(__FILE__));
+        $i = new __pinpoint_pdo_prepare_interceptor();
+        $this->addInterceptor($i, 'PDO::prepare', basename(__FILE__));
+        $i = new __pinpoint_pdo_query_interceptor();
+        $this->addInterceptor($i, 'PDO::query', basename(__FILE__));
+        $i = new __pinpoint_pdo_statement_bind_param_interceptor();
+        $this->addInterceptor($i, 'PDOStatement::bindParam', basename(__FILE__));
+        $i = new __pinpoint_pdo_statement_execute_interceptor();
+        $this->addInterceptor($i, 'PDOStatement::execute', basename(__FILE__));
     }
 }

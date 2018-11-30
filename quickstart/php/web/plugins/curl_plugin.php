@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-class curl_exec_interceptor extends \Pinpoint\Interceptor
+class __pinpoint_curl_exec_interceptor extends \Pinpoint\Interceptor
 {
     var $apiId = -1;
     public function __construct()
@@ -86,7 +86,7 @@ class curl_exec_interceptor extends \Pinpoint\Interceptor
 }
 
 
-class curl_setopt_interceptor extends \Pinpoint\Interceptor
+class __pinpoint_curl_setopt_interceptor extends \Pinpoint\Interceptor
 {
     var $apiId = -1;
     public function __construct()
@@ -146,14 +146,14 @@ class curl_setopt_interceptor extends \Pinpoint\Interceptor
     }
 }
 
-class CurlPlugin extends \Pinpoint\Plugin
+class __pinpoint_curl_plugin extends \Pinpoint\Plugin
 {
     public function __construct()
     {
         parent::__construct();
-        $i = new curl_exec_interceptor();
+        $i = new __pinpoint_curl_exec_interceptor();
         $this->addInterceptor($i, 'curl_exec', basename(__FILE__));
-        $i = new curl_setopt_interceptor();
+        $i = new __pinpoint_curl_setopt_interceptor();
         $this->addInterceptor($i, 'curl_setopt', basename(__FILE__));
     }
-};
+}
