@@ -17,7 +17,7 @@
 
 class __pinpoint_pdo_util
 {
-    const LIMIT = 1;
+    const LIMIT = 2;
 
     const SAMPLE = 0;
 
@@ -88,7 +88,7 @@ class __pinpoint_pdo_util
     {
         $dsn = self::getDsn($obj);
         if ($dsn) {
-            self::judgeIgnore($dsn);
+            return self::judgeIgnore($dsn);
         }
         return true;
     }
@@ -192,7 +192,7 @@ class __pinpoint_pdo_interceptor extends \Pinpoint\Interceptor
             $event = $trace->getEvent($callId);
             if ($event) {
                 __pinpoint_pdo_util::setDsn($this->getSelf(), $data['args'][0]);
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, (array) $this->getSelf());
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, __pinpoint_pdo_util::serializeObj($this->getSelf()));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -416,6 +416,7 @@ class __pinpoint_pdo_statement_execute_interceptor extends \Pinpoint\Interceptor
         $event->setServiceType(__pinpoint_pdo_util::getServiceType($dsn));
         $event->setDestinationId(__pinpoint_pdo_util::getDest($dsn));
 
+        $args['sql'] = $statement['sql'];
         $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, json_encode($args));
     }
 
