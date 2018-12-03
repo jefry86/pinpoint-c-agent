@@ -41,7 +41,7 @@ class __pinpoint_pdo_util
 
     static public function getDsn($obj)
     {
-        if (isset(self::$__dsnMap[(self::serializeObj($obj)]['dsn'])) {
+        if (isset(self::$__dsnMap[self::serializeObj($obj)]['dsn'])) {
             return self::$__dsnMap[self::serializeObj($obj)]['dsn'];
         }
     }
