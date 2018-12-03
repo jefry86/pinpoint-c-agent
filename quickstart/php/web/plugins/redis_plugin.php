@@ -228,7 +228,7 @@ class __pinpoint_redis_interceptor extends \Pinpoint\Interceptor
             return;
         }
 
-        if (__pinpoint_pdo_util::judgeIgnoreByPdoStatement($this->getSelf())) {
+        if (__pinpoint_redis_util::judgeIgnore($this->getSelf())) {
             return;
         }
 

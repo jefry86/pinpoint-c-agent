@@ -85,7 +85,6 @@ class __pinpoint_curl_exec_interceptor extends \Pinpoint\Interceptor
     }
 }
 
-
 class __pinpoint_curl_setopt_interceptor extends \Pinpoint\Interceptor
 {
     var $apiId = -1;
