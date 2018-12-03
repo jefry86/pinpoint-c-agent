@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-//   include_once("quickstart_plugin.php");
+//   include_once("quickstart_plugin_bak.php");
 
 $path=dirname(__FILE__);
 foreach (glob($path ."/*plugin.php") as  $value) {
@@ -23,10 +23,7 @@ foreach (glob($path ."/*plugin.php") as  $value) {
 }
 
 //$p = new QuickStartPlugin();
-//pinpoint_add_plugin($p, "quickstart_plugin.php");
-
-//$p = new ExcludePlugin();
-//pinpoint_add_plugin($p, "exclude_plugin.php");
+//pinpoint_add_plugin($p, "quickstart_plugin_bak.php");
 
 $p = new __pinpoint_curl_plugin();
 pinpoint_add_plugin($p, 'curl_plugin.php');

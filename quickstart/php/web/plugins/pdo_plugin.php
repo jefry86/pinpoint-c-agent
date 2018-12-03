@@ -17,7 +17,7 @@
 
 class __pinpoint_pdo_util
 {
-    const LIMIT = 0;
+    const LIMIT = 1;
 
     const SAMPLE = 0;
 

@@ -52,6 +52,10 @@
     <td><a href="exception2.php">exception2</a></td>
     <td>Exception in a function. </td>
   </tr>
+  <tr>
+    <td><a href="interceptor.php">interceptor</a></td>
+    <td>interceptor</td>
+  </tr>
 </table>
 
 <h3>Call remote server</h3>

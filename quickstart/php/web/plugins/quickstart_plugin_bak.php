@@ -535,28 +535,28 @@ class QuickStartPlugin extends \Pinpoint\Plugin
     $this->addSimpleInterceptor("Redis::keys", -1);
 
     $i = new TestMethodInterceptor();
-    $this->addInterceptor($i, "testNameSpace\\TestClass::getVarAdd", "quickstart_plugin.php");
+    $this->addInterceptor($i, "testNameSpace\\TestClass::getVarAdd", "quickstart_plugin_bak.php");
 
     $i = new TestCumsum1Interceptor();
-    $this->addInterceptor($i, "test_cumsum1", "quickstart_plugin.php");
+    $this->addInterceptor($i, "test_cumsum1", "quickstart_plugin_bak.php");
 
     $i = new TestCumsum3Interceptor();
-    $this->addInterceptor($i, "test_cumsum3", "quickstart_plugin.php");
+    $this->addInterceptor($i, "test_cumsum3", "quickstart_plugin_bak.php");
 
     $i = new TestCumsumE1Interceptor();
-    $this->addInterceptor($i, "test_cumsum_e1", "quickstart_plugin.php");
+    $this->addInterceptor($i, "test_cumsum_e1", "quickstart_plugin_bak.php");
 
     $i = new GetDateInterceptor();
-    $this->addInterceptor($i, "date", "quickstart_plugin.php");
+    $this->addInterceptor($i, "date", "quickstart_plugin_bak.php");
 
     $i = new TestFunc1Interceptor();
-    $this->addInterceptor($i, "test_func1", "quickstart_plugin.php");
+    $this->addInterceptor($i, "test_func1", "quickstart_plugin_bak.php");
 
     $i = new TestFunc1NULLInterceptor();
-    $this->addInterceptor($i, "test_null", "quickstart_plugin.php");
+    $this->addInterceptor($i, "test_null", "quickstart_plugin_bak.php");
 
     $i = new TestFunc2Interceptor();
-    $this->addInterceptor($i, "testNameSpace\\test_func2", "quickstart_plugin.php");
+    $this->addInterceptor($i, "testNameSpace\\test_func2", "quickstart_plugin_bak.php");
 
     $this->addSimpleInterceptor("test_cumsum2", -1);
     $this->addSimpleInterceptor("test_cumsum4", -1);
