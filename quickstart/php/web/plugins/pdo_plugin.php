@@ -27,33 +27,40 @@ class __pinpoint_pdo_util
 
     static protected $__dsnConst = [];
 
+    static public function serializeObj($obj)
+    {
+        ob_start();
+        var_dump($obj);
+        return ob_get_clean();
+    }
+
     static public function setDsn($obj, $dsn)
     {
-        self::$__dsnMap[(string) $obj]['dsn'] = $dsn;
+        self::$__dsnMap[self::serializeObj($obj)]['dsn'] = $dsn;
     }
 
     static public function getDsn($obj)
     {
-        if (isset(self::$__dsnMap[(string) $obj]['dsn'])) {
-            return self::$__dsnMap[(string) $obj]['dsn'];
+        if (isset(self::$__dsnMap[(self::serializeObj($obj)]['dsn'])) {
+            return self::$__dsnMap[self::serializeObj($obj)]['dsn'];
         }
     }
 
     static public function setStatement($obj, $pdo_obj, $sql)
     {
-        self::$__statementMap[(string)$obj]['pdo'] = $pdo_obj;
-        self::$__statementMap[(string)$obj]['sql'] = $sql;
+        self::$__statementMap[self::serializeObj($obj)]['pdo'] = $pdo_obj;
+        self::$__statementMap[self::serializeObj($obj)]['sql'] = $sql;
     }
 
     static public function setStatementParam($obj, $param)
     {
-        self::$__statementMap[(string)$obj]['param'] = $param;
+        self::$__statementMap[self::serializeObj($obj)]['param'] = $param;
     }
 
     static public function getStatement($obj)
     {
-        if (isset(self::$__statementMap[(string)$obj])) {
-            return self::$__statementMap[(string)$obj];
+        if (isset(self::$__statementMap[self::serializeObj($obj)])) {
+            return self::$__statementMap[self::serializeObj($obj)];
         }
         return null;
     }
