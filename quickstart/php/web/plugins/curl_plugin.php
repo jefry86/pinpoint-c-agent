@@ -29,7 +29,14 @@ class __pinpoint_curl_util
 
     static public function setOpt($obj, $key, $val)
     {
-        self::$__optMap[(string) $obj][$key] = $val;
+        if (is_array($val)) {
+            if (empty(self::$__optMap[(string) $obj][$key]) or ! is_array(self::$__optMap[(string) $obj][$key])) {
+                self::$__optMap[(string) $obj][$key] = [];
+            }
+            self::$__optMap[(string) $obj][$key] = array_merge(self::$__optMap[(string) $obj][$key], $val);
+        } else {
+            self::$__optMap[(string) $obj][$key] = $val;
+        }
     }
 
     static public function getOpt($obj, $key = null)
@@ -182,7 +189,10 @@ class __pinpoint_curl_exec_interceptor extends \Pinpoint\Interceptor
     {
         $trace = pinpoint_get_current_trace();
         if ($trace) {
-            $retArgs = substr($data['result'], 0, __pinpoint_curl_util::MAX) . '...';
+            $retArgs = $data['result'];
+            if (strlen($retArgs) > __pinpoint_curl_util::MAX) {
+                $retArgs = substr($retArgs, 0, __pinpoint_curl_util::MAX) . '...';
+            }
             $event = $trace->getEvent($callId);
             if ($event) {
                 $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars($retArgs, ENT_QUOTES));
