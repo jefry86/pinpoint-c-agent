@@ -44,6 +44,8 @@ echo "PDOStatement::execute 1 done.<br/>";
 $sth->execute(array(':sn' => 'BJ'));
 echo "PDOStatement::execute 2 done.<br/>";
 
+//curl
+
 $ch = curl_init();
 echo "curl_init done.<br/>";
 
@@ -55,6 +57,28 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 $output = curl_exec($ch);
 curl_close($ch);
 echo "curl_exec done.<br/>";
+
+//redis
+$redis = new Redis();
+$redis->pconnect('172.16.98.12', 6379, 2.5);
+echo "Redis::pconnect done.<br/>";
+
+$redis->set('__pinpoint_redis_test',1, 1800);
+echo "Redis::set done.<br/>";
+
+$redis->get('__pinpoint_redis_test');
+echo "Redis::get done.<br/>";
+
+$redis->incr('__pinpoint_redis_test');
+echo "Redis::incr done.<br/>";
+
+$redis->decr('__pinpoint_redis_test');
+echo "Redis::decr done.<br/>";
+
+$redis->delete('__pinpoint_redis_test');
+echo "Redis::delete done.<br/>";
+
+
 
 
 

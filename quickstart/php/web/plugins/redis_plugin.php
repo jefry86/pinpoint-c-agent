@@ -17,19 +17,36 @@
 
 class __pinpoint_redis_util
 {
-    const LIMIT = 1;
+    const LIMIT = 3;
 
     const SAMPLE = 0;
 
     const SERVICE_TYPE = 8200;
 
+    const MAX = 97;
+
     static protected $__hostMap = [];
 
     static protected $__hostConst = [];
 
+    static public function serializeObj($obj)
+    {
+        ob_start();
+        var_dump($obj);
+        return ob_get_clean();
+    }
+
+    static public function getMaxTxt($string)
+    {
+        if (strlen($string) > self::MAX) {
+            return substr($string, 0, self::MAX) . '...';
+        }
+        return $string;
+    }
+
     static public function setHostMap($obj, $ip, $port = null)
     {
-        self::$__hostMap[(string) $obj] = ['ip' => $ip, 'port' => $port];
+        self::$__hostMap[self::serializeObj($obj)] = ['ip' => $ip, 'port' => $port];
     }
 
     static public function getDest($ip, $port = null)
@@ -42,33 +59,33 @@ class __pinpoint_redis_util
 
     static public function getDestByObj($obj)
     {
-        if (! isset(self::$__hostMap[(string) $obj])) {
+        if (! isset(self::$__hostMap[self::serializeObj($obj)])) {
             return 'N/A';
         }
 
-        return self::getDest(self::$__hostMap[(string) $obj]['ip'], self::$__hostMap[(string) $obj]['port']);
+        return self::getDest(self::$__hostMap[self::serializeObj($obj)]['ip'], self::$__hostMap[self::serializeObj($obj)]['port']);
     }
 
     static public function judgeIgnore($obj)
     {
-        if (isset(self::$__hostConst[(string) $obj])) {
-            self::$__hostConst[(string) $obj] ++;
+        if (isset(self::$__hostConst[self::serializeObj($obj)])) {
+            self::$__hostConst[self::serializeObj($obj)] ++;
         } else {
-            self::$__hostConst[(string) $obj] = 1;
+            self::$__hostConst[self::serializeObj($obj)] = 1;
         }
 
         if (self::LIMIT > 0) {
-            return self::$__hostConst[(string) $obj] >= self::LIMIT;
+            return self::$__hostConst[self::serializeObj($obj)] > self::LIMIT;
         }
 
         if (self::SAMPLE > 0) {
-            return (self::$__hostConst[(string) $obj] - 1) % self::SAMPLE != 0;
+            return (self::$__hostConst[self::serializeObj($obj)] - 1) % self::SAMPLE != 0;
         }
 
         return false;
     }
 
-    static public function makeAnnotationArgs($keyMap, $args)
+    static public function makeAnnotationArgs($keyMap, $args, $org = false)
     {
         $tmp = [];
         foreach ($keyMap as $argsKey => $strKey)
@@ -76,6 +93,10 @@ class __pinpoint_redis_util
             if (isset($args[$argsKey])) {
                 $tmp[$strKey] = $args[$argsKey];
             }
+        }
+
+        if ($org) {
+            return $tmp;
         }
         return json_encode($tmp);
     }
@@ -107,9 +128,9 @@ class __pinpoint_redis_connect_interceptor extends \Pinpoint\Interceptor
         $event->setServiceType(__pinpoint_redis_util::SERVICE_TYPE);
         $event->setDestinationId(__pinpoint_redis_util::getDest($args[0], empty($args[1]) ? null : $args[1]));
 
-        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_redis_util::makeAnnotationArgs([
+        /*$event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_redis_util::makeAnnotationArgs([
             'host', 'port', 'timeout', 'reserved', 'retry', 'read_timeout'
-        ], $args));
+        ], $args));*/
     }
 
     public function onEnd($callId, $data)
@@ -123,7 +144,15 @@ class __pinpoint_redis_connect_interceptor extends \Pinpoint\Interceptor
                     $data['args'][0],
                     empty($data['args'][1]) ? null : $data['args'][1]
                 );
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, (array) $this->getSelf());
+
+                $data['args'] = __pinpoint_redis_util::makeAnnotationArgs([
+                    'host', 'port', 'timeout', 'reserved', 'retry', 'read_timeout'
+                ], $data['args'], true);
+                $data['obj'] = __pinpoint_redis_util::serializeObj($this->getSelf());
+
+                $data = __pinpoint_redis_util::getMaxTxt(json_encode($data));
+
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $data);
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -173,9 +202,9 @@ class __pinpoint_redis_pconnect_interceptor extends \Pinpoint\Interceptor
         $event->setServiceType(__pinpoint_redis_util::SERVICE_TYPE);
         $event->setDestinationId(__pinpoint_redis_util::getDest($args[0], empty($args[1]) ? null : $args[1]));
 
-        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_redis_util::makeAnnotationArgs([
+        /*$event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_redis_util::makeAnnotationArgs([
             'host', 'port', 'timeout', 'pid', 'retry', 'read_timeout'
-        ], $args));
+        ], $args));*/
     }
 
     public function onEnd($callId, $data)
@@ -189,7 +218,15 @@ class __pinpoint_redis_pconnect_interceptor extends \Pinpoint\Interceptor
                     $data['args'][0],
                     empty($data['args'][1]) ? null : $data['args'][1]
                 );
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, (array) $this->getSelf());
+
+                $data['args'] = __pinpoint_redis_util::makeAnnotationArgs([
+                    'host', 'port', 'timeout', 'pid', 'retry', 'read_timeout'
+                ], $data['args'], true);
+                $data['obj'] = __pinpoint_redis_util::serializeObj($this->getSelf());
+
+                $data = __pinpoint_redis_util::getMaxTxt(json_encode($data));
+
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $data);
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -238,12 +275,12 @@ class __pinpoint_redis_interceptor extends \Pinpoint\Interceptor
         $event->setServiceType(__pinpoint_redis_util::SERVICE_TYPE);
         $event->setDestinationId(__pinpoint_redis_util::getDestByObj($this->getSelf()));
 
-        if ($args and $this->paramKey) {
+        /*if ($args and $this->paramKey) {
             $event->addAnnotation(
                 PINPOINT_ANNOTATION_ARGS,
                 __pinpoint_redis_util::makeAnnotationArgs($this->paramKey, $args)
             );
-        }
+        }*/
     }
 
     public function onEnd($callId, $data)
@@ -252,7 +289,11 @@ class __pinpoint_redis_interceptor extends \Pinpoint\Interceptor
         if ($trace) {
             $event = $trace->getEvent($callId);
             if ($event) {
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, (array) $this->getSelf());
+                if ($data['args'] and $this->paramKey) {
+                    $data['args'] = __pinpoint_redis_util::makeAnnotationArgs($this->paramKey, $data['args'], true);
+                }
+                $data = __pinpoint_redis_util::getMaxTxt(json_encode($data));
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $data);
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -289,13 +330,13 @@ class __pinpoint_redis_plugin extends \Pinpoint\Plugin
         $i = new __pinpoint_redis_interceptor('set', ['key', 'value', 'timeout']);
         $this->addInterceptor($i, 'Redis::set', basename(__FILE__));
 
-        $i = new __pinpoint_redis_interceptor('setEx', ['key', 'ttl', 'value']);
-        $this->addInterceptor($i, 'Redis::setEx', basename(__FILE__));
-        $i = new __pinpoint_redis_interceptor('pSetEx', ['key', 'ttl', 'value']);
-        $this->addInterceptor($i, 'Redis::pSetEx', basename(__FILE__));
+        //$i = new __pinpoint_redis_interceptor('setEx', ['key', 'ttl', 'value']);
+        //$this->addInterceptor($i, 'Redis::setEx', basename(__FILE__));
+        //$i = new __pinpoint_redis_interceptor('pSetEx', ['key', 'ttl', 'value']);
+        //$this->addInterceptor($i, 'Redis::pSetEx', basename(__FILE__));
 
-        $i = new __pinpoint_redis_interceptor('setNx', ['key', 'value']);
-        $this->addInterceptor($i, 'Redis::setNx', basename(__FILE__));
+        //$i = new __pinpoint_redis_interceptor('setNx', ['key', 'value']);
+        //$this->addInterceptor($i, 'Redis::setNx', basename(__FILE__));
 
         $i = new __pinpoint_redis_interceptor('delete', ['key']);
         $this->addInterceptor($i, 'Redis::delete', basename(__FILE__));
@@ -306,13 +347,13 @@ class __pinpoint_redis_plugin extends \Pinpoint\Plugin
         $i = new __pinpoint_redis_interceptor('decr', ['key', 'value']);
         $this->addInterceptor($i, 'Redis::decr', basename(__FILE__));
 
-        $i = new __pinpoint_redis_interceptor('mGet', ['key']);
-        $this->addInterceptor($i, 'Redis::mGet', basename(__FILE__));
+        //$i = new __pinpoint_redis_interceptor('mGet', ['key']);
+        //$this->addInterceptor($i, 'Redis::mGet', basename(__FILE__));
 
-        $i = new __pinpoint_redis_interceptor('getSet', ['key', 'value']);
-        $this->addInterceptor($i, 'Redis::getSet', basename(__FILE__));
+        //$i = new __pinpoint_redis_interceptor('getSet', ['key', 'value']);
+        //$this->addInterceptor($i, 'Redis::getSet', basename(__FILE__));
 
-        $i = new __pinpoint_redis_interceptor('mSet', ['kv']);
-        $this->addInterceptor($i, 'Redis::mSet', basename(__FILE__));
+        //$i = new __pinpoint_redis_interceptor('mSet', ['kv']);
+        //$this->addInterceptor($i, 'Redis::mSet', basename(__FILE__));
     }
 }
