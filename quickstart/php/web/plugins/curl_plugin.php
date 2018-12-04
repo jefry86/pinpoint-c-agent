@@ -15,73 +15,90 @@
  * limitations under the License.
  */
 
-class __pinpoint_curl_exec_interceptor extends \Pinpoint\Interceptor
+class __pinpoint_curl_util
+{
+    const LIMIT = 2;
+
+    const SAMPLE = 0;
+
+    static protected $__optMap = [];
+
+    static protected $__optConst = [];
+
+    static public function setOpt($obj, $key, $val)
+    {
+        self::$__hostMap[(string) $obj][$key] = $val;
+    }
+
+    static public function getOpt($obj, $key = null)
+    {
+        if ($key and isset(self::$__hostMap[(string) $obj][$key])) {
+            return self::$__hostMap[(string) $obj][$key];
+        }
+        if (isset(self::$__hostMap[(string) $obj])) {
+            return self::$__hostMap[(string) $obj];
+        }
+        return null;
+    }
+
+    static public function getDest($obj)
+    {
+        if (! isset(self::$__hostMap[(string) $obj][CURLOPT_URL])) {
+            return null;
+        }
+
+        $url_array = parse_url(self::$__hostMap[(string) $obj][CURLOPT_URL]);
+
+        if (empty($url_array)) {
+            return null;
+        }
+
+        return $url_array['host'] . ':' . (empty($url_array['port']) ? 80 : $url_array['port']);
+    }
+
+    static public function judgeIgnore($dest)
+    {
+        if (isset(self::$__optConst[$dest])) {
+            self::$__optConst[$dest] ++;
+        } else {
+            self::$__optConst[$dest] = 1;
+        }
+
+        if (self::LIMIT > 0) {
+            return self::$__optConst[$dest] >= self::LIMIT;
+        }
+
+        if (self::SAMPLE > 0) {
+            return (self::$__optConst[$dest] - 1) % self::SAMPLE != 0;
+        }
+
+        return false;
+    }
+}
+
+class __pinpoint_curl_init_interceptor extends \Pinpoint\Interceptor
 {
     var $apiId = -1;
     public function __construct()
     {
-        $this->apiId = pinpoint_add_api('curl_exec', -1);
+        $this->apiId = pinpoint_add_api('curl_init', -1);
     }
 
     public function onBefore($callId, $args)
     {
-        if (empty($args[0])) return;
-        if (empty($_SERVER[(string)$args[0]])) return;
 
-        $params = $_SERVER[(string)$args[0]];
-
-        if (empty($params[CURLOPT_HTTPHEADER])) return;
-
-        $trace = pinpoint_get_current_trace();
-        if (empty($trace)) {
-            array_push($params[CURLOPT_HTTPHEADER], PINPOINT_SAMPLE_HTTP_HEADER . ':' . PINPOINT_SAMPLE_FALSE);
-            curl_setopt($args[0], CURLOPT_HTTPHEADER, $params[CURLOPT_HTTPHEADER]);
-        }
-
-        $event = $trace->traceBlockBegin($callId);
-        $attachedHeader = array();
-        $spanid = -1;
-        if($trace->getNextSpanInfo($attachedHeader, $spanid)) {
-            $opt_header = array_merge($attachedHeader, $params[CURLOPT_HTTPHEADER]);
-            if (!empty($params[CURLOPT_URL])) {
-                array_push($opt_header, 'Pinpoint-Host:' . $params[CURLOPT_URL]);
-                curl_setopt($args[0], CURLOPT_HTTPHEADER, $opt_header);
-            }
-            $event->setNextSpanId($spanid);
-        }
-
-        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS,json_encode(curl_getinfo($args[0], CURLINFO_EFFECTIVE_URL)));
-        $event->markBeforeTime();
-        $event->setApiId($this->apiId);
-        $event->setServiceType(PINPOINT_PHP_REMOTE);
-        $event->setDestinationId($params[CURLOPT_URL]);
     }
 
     public function onEnd($callId, $data)
     {
-        $trace = pinpoint_get_current_trace();
-        if ($trace) {
-            $args = $data['args'];
-            $retArgs = $data['result'];
-            $event = $trace->getEvent($callId);
-            if ($event) {
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars(print_r($retArgs,true), ENT_QUOTES));
-                $event->markAfterTime();
-                $trace->traceBlockEnd($event);
-            }
+        if ($data['args'][0]) {
+            __pinpoint_curl_util::setOpt($this->getSelf(), CURLOPT_URL, $data['args'][0]);
         }
     }
 
     public function onException($callId, $exceptionStr)
     {
-        $trace = pinpoint_get_current_trace();
-        if ($trace) {
-            $event = $trace->getEvent($callId);
-            if ($event) {
-                $event->markAfterTime();
-                $event->setExceptionInfo($exceptionStr);
-            }
-        }
+
     }
 }
 
@@ -95,37 +112,76 @@ class __pinpoint_curl_setopt_interceptor extends \Pinpoint\Interceptor
 
     public function onBefore($callId, $args)
     {
-        if ($args[1] == CURLOPT_URL) {
-            $trace = pinpoint_get_current_trace();
-            if ($trace) {
-                $event = $trace->traceBlockBegin($callId);
-                $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, $args[2]);
-                $event->markBeforeTime();
-                $event->setApiId($this->apiId);
-                $event->setServiceType(PINPOINT_PHP_RPC_TYPE);
-            }
-            $url_array = parse_url($args[2]);
 
-            $_SERVER[(string)$args[0]][$args[1]] = $url_array['host'] . ':' . (empty($url_array['port']) ? 80 : $url_array['port']);
-        } else {
-            $_SERVER[(string)$args[0]][$args[1]] = $args[2];
-        }
     }
 
     public function onEnd($callId, $data)
     {
-        $args = $data['args'];
-        $retArgs = $data['result'];
-
-        if ($args[1] != CURLOPT_URL) {
-            return ;
+        if ($data['args'][0] and $data['args'][1] and $data['args'][2]) {
+            __pinpoint_curl_util::setOpt($data['args'][0], $data['args'][1], $data['args'][2]);
         }
+    }
+
+    public function onException($callId, $exceptionStr)
+    {
+
+    }
+}
+
+class __pinpoint_curl_exec_interceptor extends \Pinpoint\Interceptor
+{
+    var $apiId = -1;
+    public function __construct()
+    {
+        $this->apiId = pinpoint_add_api('curl_exec', -1);
+    }
+
+    public function onBefore($callId, $args)
+    {
+        if (empty($args[0])) return;
+
+        $url = __pinpoint_curl_util::getDest($args[0]);
+        if (empty($url)) return;
+
         $trace = pinpoint_get_current_trace();
 
+        $opt_header = __pinpoint_curl_util::getOpt($args[0], CURLOPT_HTTPHEADER);
+        if (empty($opt_header) or ! is_array($opt_header)) {
+            $opt_header = [];
+        }
+
+        if (! $trace) {
+            $opt_header[] = PINPOINT_SAMPLE_HTTP_HEADER . ':' . PINPOINT_SAMPLE_FALSE;
+            curl_setopt($args[0], CURLOPT_HTTPHEADER, $opt_header);
+            return ;
+        }
+
+        $event = $trace->traceBlockBegin($callId);
+
+        $span_id = -1;
+        $attachedHeader = array();
+        if($trace->getNextSpanInfo($attachedHeader, $span_id)) {
+            $opt_header = array_merge($attachedHeader, $opt_header);
+            $opt_header[] = 'Pinpoint-Host:' . $url;
+            curl_setopt($args[0], CURLOPT_HTTPHEADER, $opt_header);
+            $event->setNextSpanId($span_id);
+        }
+
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, json_encode(curl_getinfo($args[0], CURLINFO_EFFECTIVE_URL)));
+        $event->markBeforeTime();
+        $event->setApiId($this->apiId);
+        $event->setServiceType(PINPOINT_PHP_REMOTE);
+        $event->setDestinationId($url);
+    }
+
+    public function onEnd($callId, $data)
+    {
+        $trace = pinpoint_get_current_trace();
         if ($trace) {
+            $retArgs = $data['result'];
             $event = $trace->getEvent($callId);
             if ($event) {
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars(print_r($retArgs, true),ENT_QUOTES));
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars(print_r($retArgs,true), ENT_QUOTES));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -150,9 +206,13 @@ class __pinpoint_curl_plugin extends \Pinpoint\Plugin
     public function __construct()
     {
         parent::__construct();
-        $i = new __pinpoint_curl_exec_interceptor();
-        $this->addInterceptor($i, 'curl_exec', basename(__FILE__));
         $i = new __pinpoint_curl_setopt_interceptor();
         $this->addInterceptor($i, 'curl_setopt', basename(__FILE__));
+
+        $i = new __pinpoint_curl_exec_interceptor();
+        $this->addInterceptor($i, 'curl_exec', basename(__FILE__));
+
+        $i = new __pinpoint_curl_init_interceptor();
+        $this->addInterceptor($i, 'curl_init', basename(__FILE__));
     }
 }
