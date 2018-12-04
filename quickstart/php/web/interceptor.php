@@ -44,6 +44,21 @@ echo "PDOStatement::execute 1 done.<br/>";
 $sth->execute(array(':sn' => 'BJ'));
 echo "PDOStatement::execute 2 done.<br/>";
 
+$ch = curl_init();
+echo "curl_init done.<br/>";
+
+curl_setopt($ch, CURLOPT_URL, 'http://www.baidu.com');
+echo "curl_setopt CURLOPT_URL done.<br/>";
+
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$output = curl_exec($ch);
+curl_close($ch);
+echo "curl_exec done.<br/>";
+
+
+
+
 
 
 

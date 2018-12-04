@@ -21,33 +21,35 @@ class __pinpoint_curl_util
 
     const SAMPLE = 0;
 
+    const MAX = 20;
+
     static protected $__optMap = [];
 
     static protected $__optConst = [];
 
     static public function setOpt($obj, $key, $val)
     {
-        self::$__hostMap[(string) $obj][$key] = $val;
+        self::$__optMap[(string) $obj][$key] = $val;
     }
 
     static public function getOpt($obj, $key = null)
     {
-        if ($key and isset(self::$__hostMap[(string) $obj][$key])) {
-            return self::$__hostMap[(string) $obj][$key];
+        if ($key and isset(self::$__optMap[(string) $obj][$key])) {
+            return self::$__optMap[(string) $obj][$key];
         }
-        if (isset(self::$__hostMap[(string) $obj])) {
-            return self::$__hostMap[(string) $obj];
+        if (isset(self::$__optMap[(string) $obj])) {
+            return self::$__optMap[(string) $obj];
         }
         return null;
     }
 
     static public function getDest($obj)
     {
-        if (! isset(self::$__hostMap[(string) $obj][CURLOPT_URL])) {
+        if (! isset(self::$__optMap[(string) $obj][CURLOPT_URL])) {
             return null;
         }
 
-        $url_array = parse_url(self::$__hostMap[(string) $obj][CURLOPT_URL]);
+        $url_array = parse_url(self::$__optMap[(string) $obj][CURLOPT_URL]);
 
         if (empty($url_array)) {
             return null;
@@ -91,7 +93,7 @@ class __pinpoint_curl_init_interceptor extends \Pinpoint\Interceptor
 
     public function onEnd($callId, $data)
     {
-        if ($data['args'][0]) {
+        if (! empty($data['args'][0])) {
             __pinpoint_curl_util::setOpt($this->getSelf(), CURLOPT_URL, $data['args'][0]);
         }
     }
@@ -143,6 +145,8 @@ class __pinpoint_curl_exec_interceptor extends \Pinpoint\Interceptor
         $url = __pinpoint_curl_util::getDest($args[0]);
         if (empty($url)) return;
 
+        if (__pinpoint_curl_util::judgeIgnore($url)) return;
+
         $trace = pinpoint_get_current_trace();
 
         $opt_header = __pinpoint_curl_util::getOpt($args[0], CURLOPT_HTTPHEADER);
@@ -178,10 +182,10 @@ class __pinpoint_curl_exec_interceptor extends \Pinpoint\Interceptor
     {
         $trace = pinpoint_get_current_trace();
         if ($trace) {
-            $retArgs = $data['result'];
+            $retArgs = substr($data['result'], 0, __pinpoint_curl_util::MAX) . '...';
             $event = $trace->getEvent($callId);
             if ($event) {
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars(print_r($retArgs,true), ENT_QUOTES));
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, htmlspecialchars($retArgs, ENT_QUOTES));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
