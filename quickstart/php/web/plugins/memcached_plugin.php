@@ -17,22 +17,39 @@
 
 class __pinpoint_memcached_util
 {
-    const LIMIT = 1;
+    const LIMIT = 3;
 
     const SAMPLE = 0;
 
     const SERVICE_TYPE = 8050;
 
+    const MAX = 97;
+
     static protected $__hostMap = [];
 
     static protected $__hostConst = [];
 
+    static public function serializeObj($obj)
+    {
+        ob_start();
+        var_dump($obj);
+        return ob_get_clean();
+    }
+
+    static public function getMaxTxt($string)
+    {
+        if (strlen($string) > self::MAX) {
+            return substr($string, 0, self::MAX) . '...';
+        }
+        return $string;
+    }
+
     static public function setHostMap($obj, $ip, $port, $weight = null)
     {
-        if (self::$__hostMap[(string) $obj] and is_array(self::$__hostMap[(string) $obj])) {
-            self::$__hostMap[(string) $obj][] = ['ip' => $ip, 'port' => $port, 'weight' => $weight];
+        if (! empty(self::$__hostMap[self::serializeObj($obj)]) and is_array(self::$__hostMap[self::serializeObj($obj)])) {
+            self::$__hostMap[self::serializeObj($obj)][] = ['ip' => $ip, 'port' => $port, 'weight' => $weight];
         } else {
-            self::$__hostMap[(string) $obj] = [['ip' => $ip, 'port' => $port, 'weight' => $weight]];
+            self::$__hostMap[self::serializeObj($obj)] = [['ip' => $ip, 'port' => $port, 'weight' => $weight]];
         }
     }
 
@@ -47,13 +64,13 @@ class __pinpoint_memcached_util
 
     static public function getDestByObj($obj)
     {
-        if (empty(self::$__hostMap[(string) $obj])) {
+        if (empty(self::$__hostMap[self::serializeObj($obj)])) {
             return 'N/A';
         }
 
         $result = [];
 
-        foreach (self::$__hostMap[(string) $obj] as $h)
+        foreach (self::$__hostMap[self::serializeObj($obj)] as $h)
         {
             $result[] = self::getDest($h['ip'], $h['port'], $h['weight']);
         }
@@ -63,18 +80,18 @@ class __pinpoint_memcached_util
 
     static public function judgeIgnore($obj)
     {
-        if (isset(self::$__hostConst[(string) $obj])) {
-            self::$__hostConst[(string) $obj] ++;
+        if (isset(self::$__hostConst[self::serializeObj($obj)])) {
+            self::$__hostConst[self::serializeObj($obj)] ++;
         } else {
-            self::$__hostConst[(string) $obj] = 1;
+            self::$__hostConst[self::serializeObj($obj)] = 1;
         }
 
         if (self::LIMIT > 0) {
-            return self::$__hostConst[(string) $obj] >= self::LIMIT;
+            return self::$__hostConst[self::serializeObj($obj)] > self::LIMIT;
         }
 
         if (self::SAMPLE > 0) {
-            return (self::$__hostConst[(string) $obj] - 1) % self::SAMPLE != 0;
+            return (self::$__hostConst[self::serializeObj($obj)] - 1) % self::SAMPLE != 0;
         }
 
         return false;
@@ -89,7 +106,7 @@ class __pinpoint_memcached_util
                 $tmp[$strKey] = $args[$argsKey];
             }
         }
-        return json_encode($tmp);
+        return self::getMaxTxt(json_encode($tmp));
     }
 }
 
@@ -223,7 +240,7 @@ class __pinpoint_memcached_interceptor extends \Pinpoint\Interceptor
         if ($trace) {
             $event = $trace->getEvent($callId);
             if ($event) {
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, (array) $this->getSelf());
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, __pinpoint_memcached_util::getMaxTxt(json_encode($data['result'])));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }

@@ -21,6 +21,8 @@ class __pinpoint_pdo_util
 
     const SAMPLE = 0;
 
+    const MAX = 100;
+
     static protected $__dsnMap = [];
 
     static protected $__statementMap = [];
@@ -32,6 +34,14 @@ class __pinpoint_pdo_util
         ob_start();
         var_dump($obj);
         return ob_get_clean();
+    }
+
+    static public function getMaxTxt($string)
+    {
+        if (strlen($string) > self::MAX) {
+            return substr($string, 0, self::MAX) . '...';
+        }
+        return $string;
     }
 
     static public function setDsn($obj, $dsn)
@@ -243,7 +253,7 @@ class __pinpoint_pdo_exec_interceptor extends \Pinpoint\Interceptor
         $event->setServiceType(__pinpoint_pdo_util::getServiceType($dsn));
         $event->setDestinationId(__pinpoint_pdo_util::getDest($dsn));
 
-        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, json_encode(['sql' => $args[0]]));
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_pdo_util::getMaxTxt(json_encode(['sql' => $args[0]])));
     }
 
     public function onEnd($callId, $data)
@@ -327,7 +337,7 @@ class __pinpoint_pdo_query_interceptor extends \Pinpoint\Interceptor
         $event->setServiceType(__pinpoint_pdo_util::getServiceType($dsn));
         $event->setDestinationId(__pinpoint_pdo_util::getDest($dsn));
 
-        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, json_encode($args));
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_pdo_util::getMaxTxt(json_encode($args)));
     }
 
     public function onEnd($callId, $data)
@@ -337,7 +347,7 @@ class __pinpoint_pdo_query_interceptor extends \Pinpoint\Interceptor
             $event = $trace->getEvent($callId);
             if ($event) {
                 __pinpoint_pdo_util::setStatement($data['result'], $this->getSelf(), $data['args'][0]);
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, json_encode($data['result']));
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, true);
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -417,7 +427,7 @@ class __pinpoint_pdo_statement_execute_interceptor extends \Pinpoint\Interceptor
         $event->setDestinationId(__pinpoint_pdo_util::getDest($dsn));
 
         $args['sql'] = $statement['sql'];
-        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, json_encode($args));
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_pdo_util::getMaxTxt(json_encode($args)));
     }
 
     public function onEnd($callId, $data)

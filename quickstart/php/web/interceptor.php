@@ -78,11 +78,18 @@ echo "Redis::decr done.<br/>";
 $redis->delete('__pinpoint_redis_test');
 echo "Redis::delete done.<br/>";
 
+//memcached
+$mc = new Memcached();
+$mc->addServer('localhost', 11211);
+echo "Memcached::addServer done.<br/>";
 
+$mc->set('foo', 'Hello!');
+echo "Memcached::set done.<br/>";
 
+$mc->get('foo');
+echo "Memcached::get done.<br/>";
 
-
-
-
+$mc->delete('foo');
+echo "Memcached::delete done.<br/>";
 
 
