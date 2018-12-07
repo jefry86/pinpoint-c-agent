@@ -175,7 +175,7 @@ PHP_MINIT_FUNCTION(pinpoint)
         }
 
         Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
-        init_host_app_map(contextPtr->applicationName);
+        //init_host_app_map(contextPtr->applicationName);
     }
     catch (std::invalid_argument& ex)
     {

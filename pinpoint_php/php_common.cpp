@@ -315,7 +315,7 @@ string get_host_name_flag_id(std::string& id)
 {
     std::string flag = get_host_name_flag();
 
-    if (! _hostAppMap.empty())
+    /*if (! _hostAppMap.empty())
     {
         std::string app_name = get_host_app_name();
         if (app_name != "")
@@ -324,7 +324,7 @@ string get_host_name_flag_id(std::string& id)
         } else {
             return flag.substr(0, 24);
         }
-    }
+    }*/
 
     string::size_type nPos = id.find_last_of(":");
 
