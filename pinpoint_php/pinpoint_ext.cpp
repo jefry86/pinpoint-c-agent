@@ -250,7 +250,6 @@ PHP_MSHUTDOWN_FUNCTION(pinpoint)
 
 PHP_RINIT_FUNCTION(pinpoint)
 {
-    LOGE("manhong:rinit start!!!");
     PhpRequestCounter::increment();
     memset(&PINPOINT_G(prs),0,sizeof(PRS));
 
@@ -265,18 +264,13 @@ PHP_RINIT_FUNCTION(pinpoint)
 
     if (agentPtr->getAgentStatus() == Pinpoint::Agent::AGENT_PRE_INITED)
     {
-        LOGE("manhong:agent frist start!!!");
         Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
         contextPtr->applicationName = get_host_name_flag_id(contextPtr->applicationName);
-LOGE("manhong:agent frist start step 1!!!");
+
         load_php_interface_plugins();
-        LOGE("manhong:agent frist start step 2!!!");
         start_pinpoint_agent_async();
-        LOGE("manhong:agent frist start step 3!!!");
         check_new_host_name_flag();
-        LOGE("manhong:agent frist end!!!");
     } else if (check_new_host_name_flag()) {
-        LOGE("manhong:new host name start!!!");
         if(agent_start_thread_ptr)
         {
             agent_start_thread_ptr->join();
@@ -289,7 +283,6 @@ LOGE("manhong:agent frist start step 1!!!");
         {
             turn_off_aop();
         }
-        LOGE("manhong:new host name setp 1!!!");
 
         Pinpoint::Configuration::ConfFileObject fileobj(PINPOINT_G(configFileName));
         Pinpoint::Configuration::Config config(fileobj);
@@ -300,24 +293,20 @@ LOGE("manhong:agent frist start step 1!!!");
         agentPtr->preInit(Pinpoint::Agent::PHP_AGENT_TYPE,
                           agentFunction,
                           config);
-        LOGE("manhong:new host name setp 2!!!");
+
         init_aop();
         turn_on_aop();
-LOGE("manhong:new host name setp 3!!!");
+
         Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
         contextPtr->applicationName = get_host_name_flag_id(contextPtr->applicationName);
-LOGE("manhong:new host name setp 4!!!");
+
         load_php_interface_plugins();
-        LOGE("manhong:new host name setp 5!!!");
         start_pinpoint_agent_async();
-LOGE("manhong:new host name setp 6!!!");
+
         is_aop_turn_on = false;
-        LOGE("manhong:new host name end!!!");
     } else {
-        LOGE("manhong:not new host name start!!!");
         Pinpoint::Agent::PinpointAgentContextPtr& contextPtr = Pinpoint::Agent::PinpointAgentContext::getContextPtr();
         contextPtr->applicationName = get_host_name_flag_id(contextPtr->applicationName);
-        LOGE("manhong:not new host name end!!!");
     }
 
     if (is_aop_turn_on && agentPtr->getAgentStatus() == Pinpoint::Agent::AGENT_STARTED)
@@ -348,7 +337,6 @@ LOGE("manhong:new host name setp 6!!!");
         }
 
     }
-LOGE("manhong:rinit end!!!");
     return SUCCESS;
 }
 
@@ -414,7 +402,6 @@ PHP_RSHUTDOWN_FUNCTION(pinpoint)
 
 static void start_pinpoint_agent()
 {
-    LOGE("manhong:start_pinpoint_agent start!!!");
     AgentPtr agentPtr = Agent::getAgentPtr();
     PINPOINT_ASSERT (agentPtr != NULL);
 
@@ -449,11 +436,9 @@ static void start_pinpoint_agent()
 
     pluginPtrVector.insert(pluginPtrVector.end(), v2.begin(), v2.end());
     LOGT("php plugin count=%d", v2.size());
-
     LOGT("all plugins count = %d", pluginPtrVector.size());
-LOGE("manhong:start_pinpoint_agent step 1!!!");
+
     err = agentPtr->init(pluginPtrVector);
-    LOGE("manhong:start_pinpoint_agent step 2!!!");
     if (err != SUCCESS)
     {
         LOGE("init Agent failed!");
@@ -461,7 +446,6 @@ LOGE("manhong:start_pinpoint_agent step 1!!!");
     }
 
     err = agentPtr->start();
-LOGE("manhong:start_pinpoint_agent step 3!!!");
     LOGI(" pinpoint agent start !!! code = %d", err);
 }
 
