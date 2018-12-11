@@ -292,8 +292,7 @@ int32_t get_http_response_status()
 string get_host_name_flag()
 {
     TSRMLS_FETCH();
-    char* pName = "SERVER_NAME";
-    char *pTempValueStr = sapi_getenv(pName, strlen(pName) TSRMLS_CC);
+    char *pTempValueStr = sapi_getenv("SERVER_NAME", strlen("SERVER_NAME") TSRMLS_CC);
     string::size_type nPos = 0;
 
     if (pTempValueStr)
@@ -308,6 +307,7 @@ string get_host_name_flag()
         }
         return value;
     }
+
     return "none";
 }
 
