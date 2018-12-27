@@ -33,7 +33,8 @@ class __pinpoint_mysqli_util
     {
         ob_start();
         var_dump($obj);
-        return ob_get_clean();
+        $content = ob_get_clean();
+        return substr($content, 0, 47);
     }
 
     static public function getMaxTxt($string)
@@ -90,16 +91,17 @@ class __pinpoint_mysqli_util
 
     static public function setStmtParam($obj, $param)
     {
-        if (is_array(self::$__stmtMap[self::serializeObj($obj)]['param'])) {
+        if (! empty(self::$__stmtMap[self::serializeObj($obj)]['param'])) {
             self::$__stmtMap[self::serializeObj($obj)]['param'] = array_merge(
                 self::$__stmtMap[self::serializeObj($obj)]['param'],
                 $param
             );
-        }
-        if (is_array($param)) {
-            self::$__stmtMap[self::serializeObj($obj)]['param'] = $param;
         } else {
-            self::$__stmtMap[self::serializeObj($obj)]['param'] = [$param];
+            if (is_array($param)) {
+                self::$__stmtMap[self::serializeObj($obj)]['param'] = $param;
+            } else {
+                self::$__stmtMap[self::serializeObj($obj)]['param'] = [$param];
+            }
         }
     }
 
@@ -239,7 +241,8 @@ class __pinpoint_mysqli_interceptor extends \Pinpoint\Interceptor
             $event = $trace->getEvent($callId);
             if ($event) {
                 __pinpoint_mysqli_util::setHost($this->getSelf(), $data['args']);
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, __pinpoint_mysqli_util::serializeObj($this->getSelf()));
+                $return = __pinpoint_mysqli_util::getMaxTxt(__pinpoint_mysqli_util::serializeObj($this->getSelf()));
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $return);
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -288,7 +291,7 @@ class __pinpoint_mysqli_query_interceptor extends \Pinpoint\Interceptor
         $event->markBeforeTime();
         $event->setApiId($this->apiId);
         $event->setServiceType(__pinpoint_mysqli_util::getServiceType());
-        $event->setDestinationId(__pinpoint_mysqli_util::getDest($host));
+        $event->setDestinationId("host:{$host['host']}\ndb:{$host['db']}");
 
         $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_mysqli_util::getMaxTxt(json_encode($args)));
     }
@@ -425,7 +428,7 @@ class __pinpoint_mysqli_stmt_execute_interceptor extends \Pinpoint\Interceptor
         $event->markBeforeTime();
         $event->setApiId($this->apiId);
         $event->setServiceType(__pinpoint_mysqli_util::getServiceType());
-        $event->setDestinationId(__pinpoint_mysqli_util::getDest($host));
+        $event->setDestinationId("host:{$host['host']}\ndb:{$host['db']}");
 
         $args = ['sql' => $stmt['sql']];
 

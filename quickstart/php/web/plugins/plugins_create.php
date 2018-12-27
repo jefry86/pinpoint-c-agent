@@ -37,4 +37,10 @@ pinpoint_add_plugin($p, 'pdo_plugin.php');
 $p = new __pinpoint_redis_plugin();
 pinpoint_add_plugin($p, 'redis_plugin.php');
 
+$p = new __pinpoint_mysqli_plugin();
+pinpoint_add_plugin($p, 'mysqli_plugin.php');
+
+$p = new __pinpoint_mysqli_func_plugin();
+pinpoint_add_plugin($p, 'mysqli_func_plugin.php');
+
 ?>

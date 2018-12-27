@@ -33,7 +33,8 @@ class __pinpoint_mysql_util
     {
         ob_start();
         var_dump($obj);
-        return ob_get_clean();
+        $content = ob_get_clean();
+        return substr($content, 0, 47);
     }
 
     static public function getMaxTxt($string)

@@ -33,7 +33,8 @@ class __pinpoint_mysqli_func_util
     {
         ob_start();
         var_dump($obj);
-        return ob_get_clean();
+        $content = ob_get_clean();
+        return substr($content, 0, 47);
     }
 
     static public function getMaxTxt($string)
@@ -89,6 +90,22 @@ class __pinpoint_mysqli_func_util
             'mysql' => $host,
             'sql' => $sql,
         ];
+    }
+
+    static public function setStmtParam($obj, $param)
+    {
+        if (! empty(self::$__stmtMap[self::serializeObj($obj)]['param'])) {
+            self::$__stmtMap[self::serializeObj($obj)]['param'] = array_merge(
+                self::$__stmtMap[self::serializeObj($obj)]['param'],
+                $param
+            );
+        } else {
+            if (is_array($param)) {
+                self::$__stmtMap[self::serializeObj($obj)]['param'] = $param;
+            } else {
+                self::$__stmtMap[self::serializeObj($obj)]['param'] = [$param];
+            }
+        }
     }
 
     static public function getStmt($obj)
@@ -226,7 +243,7 @@ class __pinpoint_mysqli_func_interceptor extends \Pinpoint\Interceptor
             $event = $trace->getEvent($callId);
             if ($event) {
                 __pinpoint_mysqli_func_util::setHost($data['result'], $data['args']);
-                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, __pinpoint_mysqli_func_util::serializeObj($data['result']));
+                $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, __pinpoint_mysqli_func_util::getMaxTxt(serialize($data['args'])));
                 $event->markAfterTime();
                 $trace->traceBlockEnd($event);
             }
@@ -275,7 +292,7 @@ class __pinpoint_mysqli_query_func_interceptor extends \Pinpoint\Interceptor
         $event->markBeforeTime();
         $event->setApiId($this->apiId);
         $event->setServiceType(__pinpoint_mysqli_func_util::getServiceType());
-        $event->setDestinationId(__pinpoint_mysqli_func_util::getDest($host));
+        $event->setDestinationId("host:{$host['host']}\ndb:{$host['db']}");
 
         $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_mysqli_func_util::getMaxTxt(json_encode($args)));
     }
@@ -321,7 +338,7 @@ class __pinpoint_mysqli_prepare_func_interceptor extends \Pinpoint\Interceptor
 
     public function onEnd($callId, $data)
     {
-        __pinpoint_mysqli_func_util::setStmt($data['result'], $data['args'][0], $data['args'][1]);
+        __pinpoint_mysqli_func_util::setStmt($data['args'][0], $data['result'], $data['args'][1]);
     }
 
     public function onException($callId, $exceptionStr)
