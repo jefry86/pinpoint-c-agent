@@ -31,16 +31,22 @@ pinpoint_add_plugin($p, 'curl_plugin.php');
 $p = new __pinpoint_memcached_plugin();
 pinpoint_add_plugin($p, 'memcached_plugin.php');
 
-$p = new __pinpoint_pdo_plugin();
-pinpoint_add_plugin($p, 'pdo_plugin.php');
+//$p = new __pinpoint_pdo_plugin();
+//pinpoint_add_plugin($p, 'pdo_plugin.php');
 
 $p = new __pinpoint_redis_plugin();
 pinpoint_add_plugin($p, 'redis_plugin.php');
 
-$p = new __pinpoint_mysqli_plugin();
-pinpoint_add_plugin($p, 'mysqli_plugin.php');
+//$p = new __pinpoint_mysqli_plugin();
+//pinpoint_add_plugin($p, 'mysqli_plugin.php');
 
-$p = new __pinpoint_mysqli_func_plugin();
-pinpoint_add_plugin($p, 'mysqli_func_plugin.php');
+//$p = new __pinpoint_mysqli_func_plugin();
+//pinpoint_add_plugin($p, 'mysqli_func_plugin.php');
+
+//$p = new __pinpoint_mysql_plugin();
+//pinpoint_add_plugin($p, 'mysql_plugin.php');
+
+$p = new __pinpoint_ci_db_driver_plugin();
+pinpoint_add_plugin($p, 'ci_db_driver_plugin.php');
 
 ?>
