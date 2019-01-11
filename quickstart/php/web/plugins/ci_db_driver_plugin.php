@@ -15,27 +15,101 @@
  * limitations under the License.
  */
 
-class __pinpoint_ci_db_driver_connect_interceptor extends \Pinpoint\Interceptor
+include_once(dirname(__FILE__) . '/util/pinpoint_ci_db_driver_util.php');
+
+class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interceptor
 {
-    var $apiId = -1;
-    public function __construct()
+    public $apiId = -1;
+
+    public $isInit = false;
+
+    public $driver = null;
+
+    public $ignore = false;
+
+    public function __construct($driver)
     {
-        $this->apiId = pinpoint_add_api('CI_DB_driver::db_connect', -1);
+        $driver = __pinpoint_ci_db_driver_util::getDriverName($driver);
+
+        if (empty($driver)) return;
+
+        $api = $driver . '::' . __pinpoint_ci_db_driver_util::METHOD_SIMPLE_QUERY;
+
+        $this->apiId = pinpoint_add_api($api, -1);
+
+        $this->isInit = true;
     }
 
     public function onBefore($callId, $args)
     {
-        var_dump($this->getSelf()->dbdriver);
+        if ($this->isInit) return;
+
+        if (empty($args[0])) return;
+
+        if (! ($trace = pinpoint_get_current_trace())) return;
+
+        if (! ($event = $trace->traceBlockBegin($callId))) return;
+
+        if (__pinpoint_ci_db_driver_util::judgeIgnore($this->getSelf())) {
+            $this->ignore = true;
+            return;
+        }
+
+        $event->markBeforeTime();
+
+        $event->setApiId($this->apiId);
+
+        $event->setServiceType(__pinpoint_ci_db_driver_util::getServiceType($this->getSelf(), $param));
+
+        $param = __pinpoint_util::decompDataMap($param);
+
+        $event->setDestinationId(__pinpoint_util::getDest($param['key'], $param['val']));
+
+        $param['key'][] = 'sql'; $param['val'][] = $args[0];
+
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_util::makeAnnotationArgs($param['key'], $param['val']));
     }
 
     public function onEnd($callId, $data)
     {
-        var_dump($data);
+        if ($this->isInit) return;
+
+        if ($this->ignore) {
+            $this->ignore = false;
+            return;
+        }
+
+        if (! ($trace = pinpoint_get_current_trace())) return;
+
+        if (! ($event = $trace->traceBlockBegin($callId))) return;
+
+        if (! $data['result']) {
+            return;
+        }
+
+        $param = __pinpoint_util::decompDataMap(__pinpoint_ci_db_driver_util::getConnectParam($this->getSelf()));
+
+        __pinpoint_ci_db_driver_util::setHandle($this->getSelf(), $param['key'], $param['val']);
+
+        $ret = __pinpoint_util::getMaxTxt(__pinpoint_util::serializeObj($data['result']));
+
+        $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $ret);
+
+        $event->markAfterTime();
+
+        $trace->traceBlockEnd($event);
     }
 
     public function onException($callId, $exceptionStr)
     {
-
+        if (! ($trace = pinpoint_get_current_trace())) {
+            return;
+        }
+        if (! ($event = $trace->getEvent($callId))) {
+            return;
+        }
+        $event->markAfterTime();
+        $event->setExceptionInfo($exceptionStr);
     }
 }
 
@@ -44,7 +118,14 @@ class __pinpoint_ci_db_driver_plugin extends \Pinpoint\Plugin
     public function __construct()
     {
         parent::__construct();
-        $i = new __pinpoint_ci_db_driver_connect_interceptor();
-        $this->addInterceptor($i, 'CI_DB_driver::db_connect', basename(__FILE__));
+
+        $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_PDO);
+        $this->addInterceptor($i, 'CI_DB_pdo_driver::simple_query', basename(__FILE__));
+
+        $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_MYSQL);
+        $this->addInterceptor($i, 'CI_DB_mysql_driver::simple_query', basename(__FILE__));
+
+        $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_MYSQLI);
+        $this->addInterceptor($i, 'CI_DB_mysqli_driver::simple_query', basename(__FILE__));
     }
 }
