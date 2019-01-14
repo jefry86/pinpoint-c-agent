@@ -49,4 +49,7 @@ pinpoint_add_plugin($p, 'redis_plugin.php');
 $p = new __pinpoint_ci_db_driver_plugin();
 pinpoint_add_plugin($p, 'ci_db_driver_plugin.php');
 
+$p = new __pinpoint_laravel_db_driver_plugin();
+pinpoint_add_plugin($p, 'laravel_db_driver_plugin.php');
+
 ?>

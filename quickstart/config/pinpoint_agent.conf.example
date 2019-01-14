@@ -21,7 +21,7 @@ AgentType="NGINX"
 # plugin
 # PhpInternalFunctionsPlugin
 PluginExclude = ExcludePlugin
-PluginInclude = PhpRequestPlugin;__pinpoint_curl_plugin;__pinpoint_memcached_plugin;__pinpoint_redis_plugin;__pinpoint_ci_db_driver_plugin;
+PluginInclude = PhpRequestPlugin;__pinpoint_curl_plugin;__pinpoint_memcached_plugin;__pinpoint_redis_plugin;__pinpoint_ci_db_driver_plugin;__pinpoint_laravel_db_driver_plugin;
 
 
 [PHP]
