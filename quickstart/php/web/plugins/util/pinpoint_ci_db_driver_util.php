@@ -23,15 +23,15 @@ class __pinpoint_ci_db_driver_util extends __pinpoint_util
     const DRIVER_MYSQL = 'mysql';
     const DRIVER_MYSQLI = 'mysqli';
 
-    const METHOD_SIMPLE_QUERY = 'simple_query';
+    const METHOD_EXECUTE = '_execute';
 
-    static public $__driver = [
+    public static $__driver = [
         self::DRIVER_PDO => 'CI_DB_pdo_driver',
         self::DRIVER_MYSQL => 'CI_DB_mysql_driver',
         self::DRIVER_MYSQLI => 'CI_DB_mysqli_driver',
     ];
 
-    static public function getDriverName($driver)
+    public static function getDriverName($driver)
     {
         if (isset(static::$__driver[$driver])) {
             return static::$__driver[$driver];
@@ -39,7 +39,7 @@ class __pinpoint_ci_db_driver_util extends __pinpoint_util
         return null;
     }
 
-    static public function parseDsn($dsn)
+    public static function parseDsn($dsn)
     {
         $res = [
             'type' => null,
@@ -56,21 +56,19 @@ class __pinpoint_ci_db_driver_util extends __pinpoint_util
 
         $dsn = explode(';', $dsn[1]);
 
-        foreach ($dsn as $val)
-        {
+        foreach ($dsn as $val) {
             $val = explode('=', $val);
 
-            switch ($val[0])
-            {
-                case 'host' :
+            switch ($val[0]) {
+                case 'host':
                     $res['host'] = $val[1]; break;
-                case 'port' :
+                case 'port':
                     $res['port'] = $val[1]; break;
-                case 'dbname' :
+                case 'dbname':
                     $res['db'] = $val[1]; break;
-                case 'charset' :
+                case 'charset':
                     $res['char'] = $val[1]; break;
-                case 'unix_socket' :
+                case 'unix_socket':
                     $res['ux'] = $val[1]; break;
             }
         }
@@ -78,7 +76,7 @@ class __pinpoint_ci_db_driver_util extends __pinpoint_util
         return $res;
     }
 
-    static public function getServiceType($obj, & $data = null)
+    public static function getCiDbServiceType($obj, & $data = null)
     {
         $data = static::getConnectParam($obj);
 
@@ -89,28 +87,24 @@ class __pinpoint_ci_db_driver_util extends __pinpoint_util
         return 2050;
     }
 
-    static public function getConnectParam($obj)
+    public static function getConnectParam($obj)
     {
-        $data = [
-            'type' => null,
-            'host' => $obj->hostname,
-            'port' => $obj->port,
-            'db' => $obj->database,
-            'char' => $obj->char_set,
-            'ux' => null,
-        ];
-
         if (! empty($obj->dsn)) {
             $data = static::parseDsn($obj->dsn);
-        } else if ($obj->dbdriver == static::DRIVER_PDO and strpos($obj->hostname, 'mysql') === FALSE) {
-            $data['type'] = 'mysql';
+        } else {
+            $data = [
+                'type' => 'mysql',
+                'host' => $obj->hostname,
+                'port' => $obj->port,
+                'db' => $obj->database,
+                'char' => $obj->char_set,
+                'ux' => null,
+            ];
         }
 
         $data['user'] = $obj->username;
-        $data['pwd'] = $obj->password;
+        //$data['pwd'] = $obj->password;
 
         return $data;
     }
-
-
 }

@@ -33,7 +33,7 @@ class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interce
 
         if (empty($driver)) return;
 
-        $api = $driver . '::' . __pinpoint_ci_db_driver_util::METHOD_SIMPLE_QUERY;
+        $api = $driver . '::' . __pinpoint_ci_db_driver_util::METHOD_EXECUTE;
 
         $this->apiId = pinpoint_add_api($api, -1);
 
@@ -42,7 +42,7 @@ class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interce
 
     public function onBefore($callId, $args)
     {
-        if ($this->isInit) return;
+        if (! $this->isInit) return;
 
         if (empty($args[0])) return;
 
@@ -59,20 +59,20 @@ class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interce
 
         $event->setApiId($this->apiId);
 
-        $event->setServiceType(__pinpoint_ci_db_driver_util::getServiceType($this->getSelf(), $param));
+        $event->setServiceType(__pinpoint_ci_db_driver_util::getCiDbServiceType($this->getSelf(), $param));
 
         $param = __pinpoint_util::decompDataMap($param);
 
         $event->setDestinationId(__pinpoint_util::getDest($param['key'], $param['val']));
 
-        $param['key'][] = 'sql'; $param['val'][] = $args[0];
+        $args = __pinpoint_util::getMaxTxt(__pinpoint_util::makeAnnotationArgs(['sql'], [$args[0]]));
 
-        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, __pinpoint_util::makeAnnotationArgs($param['key'], $param['val']));
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, $args);
     }
 
     public function onEnd($callId, $data)
     {
-        if ($this->isInit) return;
+        if (! $this->isInit) return;
 
         if ($this->ignore) {
             $this->ignore = false;
@@ -81,7 +81,7 @@ class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interce
 
         if (! ($trace = pinpoint_get_current_trace())) return;
 
-        if (! ($event = $trace->traceBlockBegin($callId))) return;
+        if (! ($event = $trace->getEvent($callId))) return;
 
         if (! $data['result']) {
             return;
@@ -102,12 +102,10 @@ class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interce
 
     public function onException($callId, $exceptionStr)
     {
-        if (! ($trace = pinpoint_get_current_trace())) {
-            return;
-        }
-        if (! ($event = $trace->getEvent($callId))) {
-            return;
-        }
+        if (! ($trace = pinpoint_get_current_trace())) return;
+
+        if (! ($event = $trace->getEvent($callId))) return;
+
         $event->markAfterTime();
         $event->setExceptionInfo($exceptionStr);
     }
@@ -120,12 +118,12 @@ class __pinpoint_ci_db_driver_plugin extends \Pinpoint\Plugin
         parent::__construct();
 
         $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_PDO);
-        $this->addInterceptor($i, 'CI_DB_pdo_driver::simple_query', basename(__FILE__));
+        $this->addInterceptor($i, 'CI_DB_pdo_driver::_execute', basename(__FILE__));
 
         $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_MYSQL);
-        $this->addInterceptor($i, 'CI_DB_mysql_driver::simple_query', basename(__FILE__));
+        $this->addInterceptor($i, 'CI_DB_mysql_driver::_execute', basename(__FILE__));
 
         $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_MYSQLI);
-        $this->addInterceptor($i, 'CI_DB_mysqli_driver::simple_query', basename(__FILE__));
+        $this->addInterceptor($i, 'CI_DB_mysqli_driver::_execute', basename(__FILE__));
     }
 }

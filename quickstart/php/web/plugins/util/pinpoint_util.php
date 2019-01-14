@@ -59,7 +59,7 @@ class __pinpoint_util
         $tmp = [];
         foreach ($keyMap as $argsKey => $strKey)
         {
-            if (isset($args[$argsKey])) {
+            if (isset($data[$argsKey])) {
                 $tmp[$strKey] = $data[$argsKey];
             }
         }
