@@ -44,7 +44,7 @@ class __pinpoint_laravel_db_driver_interceptor extends \Pinpoint\Interceptor
 
         $config = $obj->getConfig();
 
-        if (__pinpoint_ci_db_driver_util::judgeIgnore($obj)) {
+        if (__pinpoint_laravel_db_driver_util::judgeIgnore($obj)) {
             $this->ignore = true;
             return;
         }
@@ -110,7 +110,7 @@ class __pinpoint_laravel_db_driver_plugin extends \Pinpoint\Plugin
     {
         parent::__construct();
 
-        $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_PDO);
+        $i = new __pinpoint_laravel_db_driver_interceptor();
         $this->addInterceptor($i, 'Illuminate\Database\Connection::run', basename(__FILE__));
 
 
