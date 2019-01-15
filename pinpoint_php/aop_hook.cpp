@@ -408,7 +408,7 @@ ZEND_API void pp_execute_plugin_core(int internal, zend_execute_data *execute_da
     PhpAop* aop = PhpAop::getInstance();
     const Pinpoint::Plugin::InterceptorPtr& interceptorPtr =
             (aop != NULL ? aop->getInterceptorPtr(frame.fullname) : InterceptorManager::NULL_INTERCEPTOR);
-
+DEBUG_HOOK("MANHONG%s",frame.fullname);
     if(interceptorPtr != NULL)
     {
         DEBUG_HOOK("%s begin",frame.fullname);
