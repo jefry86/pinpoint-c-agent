@@ -83,10 +83,6 @@ class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interce
 
         if (! ($event = $trace->getEvent($callId))) return;
 
-        if (! $data['result']) {
-            return;
-        }
-
         $param = __pinpoint_util::decompDataMap(__pinpoint_ci_db_driver_util::getConnectParam($this->getSelf()));
 
         __pinpoint_ci_db_driver_util::setHandle($this->getSelf(), $param['key'], $param['val']);

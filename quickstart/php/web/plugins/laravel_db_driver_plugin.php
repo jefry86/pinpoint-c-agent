@@ -15,34 +15,92 @@
  * limitations under the License.
  */
 
-//include_once(dirname(__FILE__) . '/util/pinpoint_laravel_db_driver_util.php');
+include_once(dirname(__FILE__) . '/util/pinpoint_laravel_db_driver_util.php');
 
-class __pinpoint_laravel_db_driver_simple_query_interceptor extends \Pinpoint\Interceptor
+class __pinpoint_laravel_db_driver_interceptor extends \Pinpoint\Interceptor
 {
     public $apiId = -1;
 
+    public $isInit = false;
+
+    public $ignore = false;
+
     public function __construct()
     {
-        $this->apiId = pinpoint_add_api("MySqlConnection::select", -1);
+        $this->apiId = pinpoint_add_api('Illuminate\Database\Connection::run', -1);
+
+        $this->isInit = true;
     }
 
     public function onBefore($callId, $args)
     {
-        echo "<before----------------------------<br/>";
-        var_dump($args);
-        echo "----------------------------------><br/>";
+        if (! $this->isInit) return;
+
+        if (! ($trace = pinpoint_get_current_trace())) return;
+
+        if (! ($event = $trace->traceBlockBegin($callId))) return;
+
+        $obj = $this->getSelf();
+
+        $config = $obj->getConfig();
+
+        if (__pinpoint_ci_db_driver_util::judgeIgnore($obj)) {
+            $this->ignore = true;
+            return;
+        }
+
+        $event->markBeforeTime();
+
+        $event->setApiId($this->apiId);
+
+        $event->setServiceType(__pinpoint_laravel_db_driver_util::getLaravelDbServiceType($config['driver']));
+
+        $param = [
+            'type' => $config['driver'],
+            'host' => $config['host'],
+            'port' => $config['port'],
+            'db' => $config['database'],
+            'user' => $config['username'],
+        ];
+        $param = __pinpoint_util::decompDataMap($param);
+
+        $event->setDestinationId(__pinpoint_util::getDest($param['key'], $param['val']));
+
+        $args = __pinpoint_util::getMaxTxt(__pinpoint_util::makeAnnotationArgs(['sql', 'bind'], [$args[0], $args[1]]));
+
+        $event->addAnnotation(PINPOINT_ANNOTATION_ARGS, $args);
     }
 
     public function onEnd($callId, $data)
     {
-        echo "<end----------------------------<br/>";
-        var_dump($data);
-        echo "--------------------------------><br/>";
+        if (! $this->isInit) return;
+
+        if ($this->ignore) {
+            $this->ignore = false;
+            return;
+        }
+
+        if (! ($trace = pinpoint_get_current_trace())) return;
+
+        if (! ($event = $trace->getEvent($callId))) return;
+
+        $ret = __pinpoint_util::getMaxTxt(__pinpoint_util::serializeObj($data['result']));
+
+        $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $ret);
+
+        $event->markAfterTime();
+
+        $trace->traceBlockEnd($event);
     }
 
     public function onException($callId, $exceptionStr)
     {
+        if (! ($trace = pinpoint_get_current_trace())) return;
 
+        if (! ($event = $trace->getEvent($callId))) return;
+
+        $event->markAfterTime();
+        $event->setExceptionInfo($exceptionStr);
     }
 }
 
@@ -52,8 +110,9 @@ class __pinpoint_laravel_db_driver_plugin extends \Pinpoint\Plugin
     {
         parent::__construct();
 
-        $i = new __pinpoint_laravel_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_PDO);
-        $this->addInterceptor($i, 'MySqlConnection::select', basename(__FILE__));
+        $i = new __pinpoint_ci_db_driver_simple_query_interceptor(__pinpoint_ci_db_driver_util::DRIVER_PDO);
+        $this->addInterceptor($i, 'Illuminate\Database\Connection::run', basename(__FILE__));
+
 
     }
 }
