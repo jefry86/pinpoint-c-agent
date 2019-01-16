@@ -1054,7 +1054,7 @@ void PhpInterceptor::onEnd(uint64_t callId, Pinpoint::Plugin::FuncArgFetcher &ar
 
 #if PHP_MAJOR_VERSION < 7
     w_zval_ptr_dtor(args);
-    w_zval_ptr_dtor(result);
+    //w_zval_ptr_dtor(result); 优信特殊环境导致必须要注释掉，有什么后果待查
 #else
     efree(args);
     efree(result);
