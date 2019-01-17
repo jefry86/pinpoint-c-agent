@@ -42,7 +42,13 @@ class __pinpoint_laravel_db_driver_interceptor extends \Pinpoint\Interceptor
 
         $obj = $this->getSelf();
 
-        $config = $obj->getConfig();
+        $config = [
+            'type' => $obj->getConfig('driver'),
+            'host' => $obj->getConfig('host'),
+            'port' => $obj->getConfig('port'),
+            'db' => $obj->getConfig('database'),
+            'user' => $obj->getConfig('username'),
+        ];
 
         if (__pinpoint_laravel_db_driver_util::judgeIgnore($obj)) {
             $this->ignore = true;
@@ -53,16 +59,9 @@ class __pinpoint_laravel_db_driver_interceptor extends \Pinpoint\Interceptor
 
         $event->setApiId($this->apiId);
 
-        $event->setServiceType(__pinpoint_laravel_db_driver_util::getLaravelDbServiceType($config['driver']));
+        $event->setServiceType(__pinpoint_laravel_db_driver_util::getLaravelDbServiceType($config['type']));
 
-        $param = [
-            'type' => $config['driver'],
-            'host' => $config['host'],
-            'port' => $config['port'],
-            'db' => $config['database'],
-            'user' => $config['username'],
-        ];
-        $param = __pinpoint_util::decompDataMap($param);
+        $param = __pinpoint_util::decompDataMap($config);
 
         $event->setDestinationId(__pinpoint_util::getDest($param['key'], $param['val']));
 
@@ -85,6 +84,8 @@ class __pinpoint_laravel_db_driver_interceptor extends \Pinpoint\Interceptor
         if (! ($event = $trace->getEvent($callId))) return;
 
         $ret = __pinpoint_util::getMaxTxt(__pinpoint_util::serializeObj($data['result']));
+
+        unset($data['result']);
 
         $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $ret);
 

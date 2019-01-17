@@ -89,6 +89,8 @@ class __pinpoint_ci_db_driver_simple_query_interceptor extends \Pinpoint\Interce
 
         $ret = __pinpoint_util::getMaxTxt(__pinpoint_util::serializeObj($data['result']));
 
+        unset($data['result']);
+
         $event->addAnnotation(PINPOINT_ANNOTATION_RETURN, $ret);
 
         $event->markAfterTime();
